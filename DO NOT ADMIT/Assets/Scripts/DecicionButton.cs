@@ -4,7 +4,7 @@ public class DecisionButton : Interactable
 {
     public enum DecisionType
     {
-        Admit,
+        Clear,
         Deny
     }
 
@@ -26,8 +26,8 @@ public class DecisionButton : Interactable
 
         switch (decisionType)
         {
-            case DecisionType.Admit:
-                visitorManager.AdmitCurrentVisitor();
+            case DecisionType.Clear:
+                visitorManager.ClearCurrentVisitor();
                 break;
 
             case DecisionType.Deny:

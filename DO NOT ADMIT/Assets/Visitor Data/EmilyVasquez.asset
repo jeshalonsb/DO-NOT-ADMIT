@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc0c54928d5a4a042bc484bf55a0cc74, type: 3}
+  m_Name: EmilyVasquez
+  m_EditorClassIdentifier: Assembly-CSharp::VisitorData
+  visitorName: Emily Vasquez
+  employeeID: 6621
+  department: Engineering
+  clearanceLevel: A
+  employeeStatus: ACTIVE

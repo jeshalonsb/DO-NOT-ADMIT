@@ -5,15 +5,15 @@ public class PlayerLook : MonoBehaviour
 {
     [Header("Look Settings")]
     [SerializeField] private float mouseSensitivity = 0.15f;
+
+    [Header("Vertical Look Limits")]
     [SerializeField] private float maxLookUp = 80f;
     [SerializeField] private float maxLookDown = 80f;
 
-    [Header("Horizontal Look Limits")]
-    [SerializeField] private float maxLookLeft = 100f;
-    [SerializeField] private float maxLookRight = 100f;
+    [Header("References")]
+    [SerializeField] private Transform playerBody;
 
-    private float xRotation = 0f;
-    private float yRotation = 0f;
+    private float xRotation;
 
     private void Start()
     {
@@ -38,13 +38,11 @@ public class PlayerLook : MonoBehaviour
 
         // Vertical look
         xRotation -= mouseY;
+
         xRotation = Mathf.Clamp(xRotation, -maxLookUp, maxLookDown);
 
-        // Horizontal look
-        yRotation += mouseX;
-        yRotation = Mathf.Clamp(yRotation, -maxLookLeft, maxLookRight);
+        transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
 
-        // Rotate ONLY the camera
-        transform.localRotation = Quaternion.Euler(xRotation, yRotation, 0f);
+        playerBody.Rotate(Vector3.up * mouseX);
     }
 }
