@@ -20,4 +20,14 @@ public class VisitorData : ScriptableObject
 
     [Header("Gameplay")]
     public CorrectDecision correctDecision = CorrectDecision.Clear;
+
+    [Header("Dialogue")]
+    [TextArea(2, 4)]
+    public string arrivalDialogue;
+
+    [TextArea(2, 4)]
+    public string clearDialogue;
+
+    [TextArea(2, 4)]
+    public string denyDialogue;
 }

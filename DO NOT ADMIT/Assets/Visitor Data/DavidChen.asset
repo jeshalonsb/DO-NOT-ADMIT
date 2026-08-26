@@ -18,3 +18,6 @@ MonoBehaviour:
   clearanceLevel: C
   employeeStatus: ACTIVE
   correctDecision: 1
+  arrivalDialogue: 'Maintenance. Got called in for some bullshit. '
+  clearDialogue: Finally gosh, theyre waiting for me.
+  denyDialogue: 'Are you serious? What a waste of time. '

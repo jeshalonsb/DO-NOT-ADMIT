@@ -13,7 +13,11 @@ MonoBehaviour:
   m_Name: SarahCollins
   m_EditorClassIdentifier: Assembly-CSharp::VisitorData
   visitorName: Sarah Collins
-  employeeID: 7319
+  employeeID: 7318
   department: Research
   clearanceLevel: A
   employeeStatus: ACTIVE
+  correctDecision: 1
+  arrivalDialogue: "Here and ready to work!\t"
+  clearDialogue: "thank you so much. Have a good night \t\t"
+  denyDialogue: What how? I work here I swear!

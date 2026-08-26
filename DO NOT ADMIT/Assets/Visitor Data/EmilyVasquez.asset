@@ -17,3 +17,7 @@ MonoBehaviour:
   department: Engineering
   clearanceLevel: A
   employeeStatus: ACTIVE
+  correctDecision: 0
+  arrivalDialogue: Good Evening. Engineering Department
+  clearDialogue: '*sigh* Here we go again'
+  denyDialogue: Whatever. I didnt wanna be here anyway

@@ -30,6 +30,9 @@ public class VisitorManager : MonoBehaviour
     [Header("Shift")]
     [SerializeField] private ShiftManager shiftManager;
 
+    [Header("Dialogue")]
+    [SerializeField] private VisitorDialogueUI dialogueUI;
+
     private int currentVisitorIndex = 0;
 
     private Visitor currentVisitor;
@@ -76,8 +79,16 @@ public class VisitorManager : MonoBehaviour
     {
         currentVisitor = visitor;
 
-        if ( idCard != null ) 
+        if (idCard != null)
             idCard.DisplayVisitor(visitor.Data);
+
+        if (dialogueUI != null)
+        {
+            dialogueUI.ShowDialogue(
+                visitor.Data.visitorName,
+                visitor.Data.arrivalDialogue
+            );
+        }
     }
 
     public void ClearCurrentVisitor()
@@ -90,6 +101,14 @@ public class VisitorManager : MonoBehaviour
             shiftManager.RegisterDecision(
                 currentVisitor.Data,
                 CorrectDecision.Clear
+            );
+        }
+
+        if (dialogueUI != null)
+        {
+            dialogueUI.ShowDialogue(
+                currentVisitor.Data.visitorName,
+                currentVisitor.Data.clearDialogue
             );
         }
 
@@ -113,6 +132,14 @@ public class VisitorManager : MonoBehaviour
             shiftManager.RegisterDecision(
                 currentVisitor.Data,
                 CorrectDecision.Deny
+            );
+        }
+
+        if (dialogueUI != null)
+        {
+            dialogueUI.ShowDialogue(
+                currentVisitor.Data.visitorName,
+                currentVisitor.Data.denyDialogue
             );
         }
 

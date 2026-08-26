@@ -17,3 +17,7 @@ MonoBehaviour:
   department: Engineering
   clearanceLevel: B
   employeeStatus: ACTIVE
+  correctDecision: 0
+  arrivalDialogue: Engineering
+  clearDialogue: thanks man
+  denyDialogue: What? This is bullshit. I was already cleared by the main gate
