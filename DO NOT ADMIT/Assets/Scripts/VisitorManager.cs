@@ -27,6 +27,9 @@ public class VisitorManager : MonoBehaviour
     [Header("Facility Door")]
     [SerializeField] private FacilityDoors facilityDoors;
 
+    [Header("Shift")]
+    [SerializeField] private ShiftManager shiftManager;
+
     private int currentVisitorIndex = 0;
 
     private Visitor currentVisitor;
@@ -79,8 +82,18 @@ public class VisitorManager : MonoBehaviour
 
     public void ClearCurrentVisitor()
     {
-        if (currentVisitor != null)
-            currentVisitor.Clear();
+        if (currentVisitor == null)
+            return;
+
+        if (shiftManager != null)
+        {
+            shiftManager.RegisterDecision(
+                currentVisitor.Data,
+                CorrectDecision.Clear
+            );
+        }
+
+        currentVisitor.Clear();
     }
 
     public void VisitorWaitingAtDoor(Visitor visitor)
@@ -92,8 +105,18 @@ public class VisitorManager : MonoBehaviour
 
     public void DenyCurrentVisitor()
     {
-        if (currentVisitor != null)
-            currentVisitor.Deny();
+        if (currentVisitor == null)
+            return;
+
+        if (shiftManager != null)
+        {
+            shiftManager.RegisterDecision(
+                currentVisitor.Data,
+                CorrectDecision.Deny
+            );
+        }
+
+        currentVisitor.Deny();
     }
 
     public void UnlockFacilityDoor()

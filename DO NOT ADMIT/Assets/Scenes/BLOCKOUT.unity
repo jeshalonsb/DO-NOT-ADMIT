@@ -23825,6 +23825,7 @@ GameObject:
   m_Component:
   - component: {fileID: 761099002}
   - component: {fileID: 761099003}
+  - component: {fileID: 761099005}
   - component: {fileID: 761099004}
   m_Layer: 0
   m_Name: GameManager
@@ -23874,6 +23875,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 64c282164fdc41649a60488004ad6da5, type: 2}
   - {fileID: 11400000, guid: c363a26b255c46045812cf8bf27c6cf3, type: 2}
   facilityDoors: {fileID: 1068535128}
+  shiftManager: {fileID: 761099005}
 --- !u!114 &761099004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23890,6 +23892,21 @@ MonoBehaviour:
   employeeParkingCamera: {fileID: 27459702}
   perimeterGateCamera: {fileID: 1608042513}
   rearFacilityCamera: {fileID: 1181853473}
+--- !u!114 &761099005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761099001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bc7b177590a3af4fbf90a5d0f187c04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShiftManager
+  correctDecisions: 0
+  mistakes: 0
+  maximumMistakes: 2
 --- !u!1 &763240432
 GameObject:
   m_ObjectHideFlags: 0

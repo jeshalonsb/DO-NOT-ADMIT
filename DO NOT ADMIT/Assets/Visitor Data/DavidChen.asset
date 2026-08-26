@@ -17,3 +17,4 @@ MonoBehaviour:
   department: Maitenance
   clearanceLevel: C
   employeeStatus: ACTIVE
+  correctDecision: 1
