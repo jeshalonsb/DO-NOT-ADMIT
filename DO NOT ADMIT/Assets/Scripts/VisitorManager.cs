@@ -36,7 +36,10 @@ public class VisitorManager : MonoBehaviour
     [SerializeField] private int minimumImpostors = 1;
     [SerializeField] private int maximumImpostors = 2;
 
-    [SerializeField] private ShiftClock shiftClock; 
+    [SerializeField] private ShiftClock shiftClock;
+
+    private bool visitorSpawningPaused;
+    private bool waitingToSpawnVisitor;
 
     private readonly HashSet<int> impostorIndices =
         new HashSet<int>();
@@ -48,9 +51,8 @@ public class VisitorManager : MonoBehaviour
 
     private bool shiftStarted;
 
-    // TEMPORARY:
-    // Starts shift immediately for testing.
-    // Remove this later when your booth/start trigger handles it.
+    private bool decisionMade;
+
     private void Start()
     {
         StartShift();
@@ -192,6 +194,7 @@ public class VisitorManager : MonoBehaviour
     public void VisitorReady(Visitor visitor)
     {
         currentVisitor = visitor;
+        decisionMade = false;
 
         if (idCard != null)
         {
@@ -209,8 +212,10 @@ public class VisitorManager : MonoBehaviour
 
     public void ClearCurrentVisitor()
     {
-        if (currentVisitor == null)
+        if (currentVisitor == null || decisionMade)
             return;
+
+        decisionMade = true;
 
         if (shiftManager != null)
         {
@@ -234,8 +239,10 @@ public class VisitorManager : MonoBehaviour
 
     public void DenyCurrentVisitor()
     {
-        if (currentVisitor == null)
+        if (currentVisitor == null || decisionMade)
             return;
+
+        decisionMade = true;
 
         if (shiftManager != null)
         {
@@ -304,10 +311,36 @@ public class VisitorManager : MonoBehaviour
 
     private IEnumerator SpawnNextVisitor()
     {
-        yield return new WaitForSeconds(
-            timeBetweenVisitors
-        );
+        yield return new WaitForSeconds(timeBetweenVisitors);
+
+        if (visitorSpawningPaused)
+        {
+            waitingToSpawnVisitor = true;
+
+            Debug.Log("Next visitor waiting because visitor spawning is paused.");
+
+            yield break;
+        }
 
         SpawnVisitor();
+    }
+    public void PauseVisitorSpawning()
+    {
+        visitorSpawningPaused = true;
+
+        Debug.Log("Visitor spawning paused.");
+    }
+
+    public void ResumeVisitorSpawning()
+    {
+        visitorSpawningPaused = false;
+
+        Debug.Log("Visitor spawning resumed.");
+
+        if (waitingToSpawnVisitor)
+        {
+            waitingToSpawnVisitor = false;
+            StartCoroutine(SpawnNextVisitor());
+        }
     }
 }

@@ -18,13 +18,13 @@ public class Interactable : MonoBehaviour
         return interactionMessage;
     }
 
-    public void ShowPrompt()
+    public virtual void ShowPrompt()
     {
         if (interactionPrompt != null)
             interactionPrompt.SetActive(true);
     }
 
-    public void HidePrompt()
+    public virtual void HidePrompt()
     {
         if (interactionPrompt != null)
             interactionPrompt.SetActive(false);

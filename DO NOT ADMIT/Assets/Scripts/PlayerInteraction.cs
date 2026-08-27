@@ -8,14 +8,19 @@ public class PlayerInteraction : MonoBehaviour
     [SerializeField] private LayerMask interactionLayer;
 
     private Interactable currentInteractable;
+    private BreakerBox currentBreaker;
 
     private void Update()
     {
         CheckForInteractable();
 
-        if (Keyboard.current != null &&
-            Keyboard.current.eKey.wasPressedThisFrame &&
-            currentInteractable != null)
+        if (Keyboard.current == null)
+            return;
+
+        // Normal interactables use a single E press
+        if (Keyboard.current.eKey.wasPressedThisFrame &&
+            currentInteractable != null &&
+            currentBreaker == null)
         {
             currentInteractable.Interact();
         }
@@ -25,32 +30,63 @@ public class PlayerInteraction : MonoBehaviour
     {
         Ray ray = new Ray(transform.position, transform.forward);
 
-        if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance, interactionLayer))
+        if (Physics.Raycast(
+            ray,
+            out RaycastHit hit,
+            interactionDistance,
+            interactionLayer))
         {
             Interactable newInteractable =
                 hit.collider.GetComponent<Interactable>();
 
+            BreakerBox newBreaker =
+                hit.collider.GetComponent<BreakerBox>();
+
             if (newInteractable != null)
             {
-                // We're looking at a different object
+                // Switched to a different interactable
                 if (newInteractable != currentInteractable)
                 {
                     if (currentInteractable != null)
                         currentInteractable.HidePrompt();
 
+                    // Stop breaker hold if we looked away from old breaker
+                    if (currentBreaker != null)
+                    {
+                        currentBreaker.SetPlayerLooking(false);
+                        currentBreaker = null;
+                    }
+
                     currentInteractable = newInteractable;
                     currentInteractable.ShowPrompt();
+
+                    // Check if this interactable is the breaker
+                    if (newBreaker != null)
+                    {
+                        currentBreaker = newBreaker;
+                        currentBreaker.SetPlayerLooking(true);
+                    }
                 }
 
                 return;
             }
         }
 
-        // Nothing interactable is being looked at
+        ClearCurrentInteractable();
+    }
+
+    private void ClearCurrentInteractable()
+    {
         if (currentInteractable != null)
         {
             currentInteractable.HidePrompt();
             currentInteractable = null;
+        }
+
+        if (currentBreaker != null)
+        {
+            currentBreaker.SetPlayerLooking(false);
+            currentBreaker = null;
         }
     }
 }

@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using System;
 
 public class ShiftClock : MonoBehaviour
 {
@@ -13,6 +14,10 @@ public class ShiftClock : MonoBehaviour
     private int currentHour = 22; // 10 PM
     private float timer;
     private bool clockRunning;
+
+    public event Action<int> OnHourChanged;
+
+    public int CurrentHour => currentHour;
 
     private void Start()
     {
@@ -53,6 +58,8 @@ public class ShiftClock : MonoBehaviour
             currentHour = 0;
 
         UpdateClockDisplay();
+
+        OnHourChanged?.Invoke(currentHour);
 
         Debug.Log("Current shift hour: " + clockText.text);
 
