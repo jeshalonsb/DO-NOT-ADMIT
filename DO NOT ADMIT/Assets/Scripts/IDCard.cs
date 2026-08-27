@@ -10,23 +10,34 @@ public class IDCard : MonoBehaviour
     [SerializeField] private TMP_Text clearanceText;
     [SerializeField] private TMP_Text statusText;
 
-    public void DisplayVisitor(VisitorData data)
+    public void DisplayVisitor(Visitor visitor)
     {
-        if (data == null)
-        {
-            Debug.LogWarning("VisitorData is null.");
+        if (visitor == null)
             return;
-        }
 
-        Debug.Log("Displaying ID for: " + data.visitorName);
+        nameText.text =
+            visitor.DisplayName;
 
-        nameText.text = data.visitorName;
-        idText.text = "ID #" + data.employeeID;
-        departmentText.text = data.department;
-        clearanceText.text = "CLEARANCE: " + data.clearanceLevel;
-        statusText.text = "STATUS: " + data.employeeStatus;
+        idText.text =
+            "ID #" + visitor.DisplayEmployeeID;
+
+        departmentText.text =
+            visitor.DisplayDepartment;
+
+        clearanceText.text =
+            "CLEARANCE: " +
+            visitor.DisplayClearance;
+
+        statusText.text =
+            "STATUS: " +
+            visitor.DisplayStatus;
 
         gameObject.SetActive(true);
+
+        Debug.Log(
+            "Displaying ID for: " +
+            visitor.DisplayName
+        );
     }
 
     public void HideCard()

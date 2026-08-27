@@ -3,8 +3,8 @@ using UnityEngine;
 public class ShiftManager : MonoBehaviour
 {
     [Header("Shift Stats")]
-    [SerializeField] private int correctDecisions = 0;
-    [SerializeField] private int mistakes = 0;
+    [SerializeField] private int correctDecisions;
+    [SerializeField] private int mistakes;
 
     [Header("Failure Settings")]
     [SerializeField] private int maximumMistakes = 2;
@@ -14,23 +14,24 @@ public class ShiftManager : MonoBehaviour
 
     public void RegisterDecision(
         VisitorData visitor,
+        CorrectDecision correctDecision,
         CorrectDecision playerDecision)
     {
         if (visitor == null)
         {
-            Debug.LogWarning("Cannot register decision: VisitorData is null.");
+            Debug.LogWarning("VisitorData is null.");
             return;
         }
 
-        if (visitor.correctDecision == playerDecision)
+        if (correctDecision == playerDecision)
         {
             correctDecisions++;
 
             Debug.Log(
-                "CORRECT DECISION: " +
+                "CORRECT DECISION | " +
                 visitor.visitorName +
-                " should have been " +
-                visitor.correctDecision
+                " | Correct: " +
+                correctDecision
             );
         }
         else
@@ -38,11 +39,13 @@ public class ShiftManager : MonoBehaviour
             mistakes++;
 
             Debug.LogWarning(
-                "WRONG DECISION: " +
+                "WRONG DECISION | " +
                 visitor.visitorName +
-                " should have been " +
-                visitor.correctDecision +
-                ". Mistakes: " +
+                " | Correct: " +
+                correctDecision +
+                " | Player chose: " +
+                playerDecision +
+                " | Mistakes: " +
                 mistakes +
                 "/" +
                 maximumMistakes

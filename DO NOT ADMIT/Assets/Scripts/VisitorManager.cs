@@ -1,10 +1,14 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class VisitorManager : MonoBehaviour
 {
     [Header("Visitor")]
     [SerializeField] private GameObject visitorPrefab;
+
+    [Header("Visitor Queue")]
+    [SerializeField] private VisitorData[] visitors;
 
     [Header("Visitor Points")]
     [SerializeField] private Transform spawnPoint;
@@ -13,44 +17,127 @@ public class VisitorManager : MonoBehaviour
     [SerializeField] private Transform entryExitPoint;
     [SerializeField] private Transform denyExitPoint;
 
-    private Visitor visitorWaitingAtDoor;
-
     [Header("Timing")]
     [SerializeField] private float timeBetweenVisitors = 2f;
 
     [Header("ID Card")]
     [SerializeField] private IDCard idCard;
 
-    [Header("Visitor Queue")]
-    [SerializeField] private VisitorData[] visitors;
-
-    [Header("Facility Door")]
-    [SerializeField] private FacilityDoors facilityDoors;
+    [Header("Dialogue")]
+    [SerializeField] private VisitorDialogueUI dialogueUI;
 
     [Header("Shift")]
     [SerializeField] private ShiftManager shiftManager;
 
-    [Header("Dialogue")]
-    [SerializeField] private VisitorDialogueUI dialogueUI;
+    [Header("Facility Doors")]
+    [SerializeField] private FacilityDoors facilityDoors;
 
-    private int currentVisitorIndex = 0;
+    [Header("Impostor Settings")]
+    [SerializeField] private int minimumImpostors = 1;
+    [SerializeField] private int maximumImpostors = 2;
+
+    [SerializeField] private ShiftClock shiftClock; 
+
+    private readonly HashSet<int> impostorIndices =
+        new HashSet<int>();
 
     private Visitor currentVisitor;
+    private Visitor visitorWaitingAtDoor;
 
+    private int currentVisitorIndex;
+
+    private bool shiftStarted;
+
+    // TEMPORARY:
+    // Starts shift immediately for testing.
+    // Remove this later when your booth/start trigger handles it.
     private void Start()
     {
+        StartShift();
+    }
+
+    public void StartShift()
+    {
+        if (shiftStarted)
+            return;
+
+        shiftStarted = true;
+        currentVisitorIndex = 0;
+
+        GenerateImpostors();
+
+        if (shiftClock != null)
+            shiftClock.StartClock();
+
+        Debug.Log("SHIFT STARTED");
+
         SpawnVisitor();
+    }
+
+    private void GenerateImpostors()
+    {
+        impostorIndices.Clear();
+
+        if (visitors == null || visitors.Length == 0)
+        {
+            Debug.LogWarning("No visitors assigned.");
+            return;
+        }
+
+        int minimum = Mathf.Clamp(
+            minimumImpostors,
+            1,
+            visitors.Length
+        );
+
+        int maximum = Mathf.Clamp(
+            maximumImpostors,
+            minimum,
+            visitors.Length
+        );
+
+        int impostorCount = Random.Range(
+            minimum,
+            maximum + 1
+        );
+
+        while (impostorIndices.Count < impostorCount)
+        {
+            int randomIndex =
+                Random.Range(0, visitors.Length);
+
+            impostorIndices.Add(randomIndex);
+        }
+
+        Debug.Log(
+            "GENERATED " +
+            impostorIndices.Count +
+            " IMPOSTORS"
+        );
+
+        // DEVELOPMENT ONLY.
+        // Remove these logs for the final build.
+        foreach (int index in impostorIndices)
+        {
+            Debug.Log(
+                "IMPOSTOR = " +
+                visitors[index].visitorName
+            );
+        }
     }
 
     private void SpawnVisitor()
     {
         if (currentVisitorIndex >= visitors.Length)
         {
-            Debug.Log("SHIFT COMPLETE - All visitors processed.");
+            Debug.Log("ALL VISITORS PROCESSED");
             return;
         }
 
-        VisitorData nextVisitorData = visitors[currentVisitorIndex];
+        int visitorIndex = currentVisitorIndex;
+
+        VisitorData nextVisitorData =
+            visitors[visitorIndex];
 
         GameObject visitorObject = Instantiate(
             visitorPrefab,
@@ -58,9 +145,31 @@ public class VisitorManager : MonoBehaviour
             spawnPoint.rotation
         );
 
-        currentVisitor = visitorObject.GetComponent<Visitor>();
+        currentVisitor =
+            visitorObject.GetComponent<Visitor>();
 
-        currentVisitor.SetVisitorData(nextVisitorData);
+        if (currentVisitor == null)
+        {
+            Debug.LogError(
+                "Visitor prefab does not contain Visitor.cs!"
+            );
+
+            Destroy(visitorObject);
+            return;
+        }
+
+        // Give them their real identity first.
+        currentVisitor.SetVisitorData(
+            nextVisitorData
+        );
+
+        // Decide if THIS visitor is an impostor this shift.
+        bool isImpostor =
+            impostorIndices.Contains(visitorIndex);
+
+        currentVisitor.SetImpostor(
+            isImpostor
+        );
 
         currentVisitor.Setup(
             inspectionPoint,
@@ -70,7 +179,12 @@ public class VisitorManager : MonoBehaviour
             this
         );
 
-        Debug.Log("Visitor arriving: " + nextVisitorData.visitorName);
+        Debug.Log(
+            "SPAWNING: " +
+            nextVisitorData.visitorName +
+            " | IMPOSTOR: " +
+            isImpostor
+        );
 
         currentVisitorIndex++;
     }
@@ -80,7 +194,9 @@ public class VisitorManager : MonoBehaviour
         currentVisitor = visitor;
 
         if (idCard != null)
-            idCard.DisplayVisitor(visitor.Data);
+        {
+            idCard.DisplayVisitor(visitor);
+        }
 
         if (dialogueUI != null)
         {
@@ -100,6 +216,7 @@ public class VisitorManager : MonoBehaviour
         {
             shiftManager.RegisterDecision(
                 currentVisitor.Data,
+                currentVisitor.CorrectDecision,
                 CorrectDecision.Clear
             );
         }
@@ -115,13 +232,6 @@ public class VisitorManager : MonoBehaviour
         currentVisitor.Clear();
     }
 
-    public void VisitorWaitingAtDoor(Visitor visitor)
-    {
-        visitorWaitingAtDoor = visitor;
-
-        Debug.Log("Visitor ready for facility door unlock.");
-    }
-
     public void DenyCurrentVisitor()
     {
         if (currentVisitor == null)
@@ -131,6 +241,7 @@ public class VisitorManager : MonoBehaviour
         {
             shiftManager.RegisterDecision(
                 currentVisitor.Data,
+                currentVisitor.CorrectDecision,
                 CorrectDecision.Deny
             );
         }
@@ -146,21 +257,32 @@ public class VisitorManager : MonoBehaviour
         currentVisitor.Deny();
     }
 
+    public void VisitorWaitingAtDoor(
+        Visitor visitor)
+    {
+        visitorWaitingAtDoor = visitor;
+
+        Debug.Log(
+            "Visitor ready for facility door unlock."
+        );
+    }
+
     public void UnlockFacilityDoor()
     {
         if (visitorWaitingAtDoor == null)
         {
-            Debug.Log("No visitor is currently waiting at the facility door.");
+            Debug.LogWarning(
+                "No visitor currently waiting at facility door."
+            );
+
             return;
         }
 
-        // Open physical doors
         if (facilityDoors != null)
         {
             facilityDoors.OpenDoors();
         }
 
-        // Send visitor inside
         visitorWaitingAtDoor.UnlockDoor();
 
         visitorWaitingAtDoor = null;
@@ -169,16 +291,22 @@ public class VisitorManager : MonoBehaviour
     public void VisitorFinished()
     {
         if (idCard != null)
+        {
             idCard.HideCard();
+        }
 
         currentVisitor = null;
 
-        StartCoroutine(SpawnNextVisitor());
+        StartCoroutine(
+            SpawnNextVisitor()
+        );
     }
 
     private IEnumerator SpawnNextVisitor()
     {
-        yield return new WaitForSeconds(timeBetweenVisitors);
+        yield return new WaitForSeconds(
+            timeBetweenVisitors
+        );
 
         SpawnVisitor();
     }

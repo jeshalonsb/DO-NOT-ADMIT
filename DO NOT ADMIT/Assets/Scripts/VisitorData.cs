@@ -18,9 +18,6 @@ public class VisitorData : ScriptableObject
     [Header("Status")]
     public string employeeStatus = "ACTIVE";
 
-    [Header("Gameplay")]
-    public CorrectDecision correctDecision = CorrectDecision.Clear;
-
     [Header("Dialogue")]
     [TextArea(2, 4)]
     public string arrivalDialogue;
