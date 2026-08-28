@@ -85,6 +85,10 @@ public class EndingController : MonoBehaviour
     [SerializeField] private TMP_Text endingText;
     [SerializeField] private float fadeDuration = 1f;
 
+    [Header("Game Flow")]
+    [SerializeField]
+    private GameFlowManager gameFlowManager;
+
     private EndingType endingType =
         EndingType.None;
 
@@ -152,6 +156,9 @@ public class EndingController : MonoBehaviour
             return;
 
         shiftEnded = true;
+
+        if (gameFlowManager != null)
+            gameFlowManager.CompleteShift();
 
         // Completely close visitor processing
         if (visitorManager != null)

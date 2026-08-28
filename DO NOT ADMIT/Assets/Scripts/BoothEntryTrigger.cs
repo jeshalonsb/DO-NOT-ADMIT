@@ -2,14 +2,28 @@ using UnityEngine;
 
 public class BoothEntryTrigger : MonoBehaviour
 {
-    [SerializeField] private GameFlowManager gameFlowManager;
+    [Header("Game Flow")]
+    [SerializeField]
+    private GameFlowManager gameFlowManager;
 
-    private void OnTriggerEnter(Collider other)
+    [Header("Booth Door")]
+    [SerializeField]
+    private SwingDoor boothDoor;
+
+    private void OnTriggerEnter(
+        Collider other)
     {
         if (!other.CompareTag("Player"))
             return;
 
         if (gameFlowManager != null)
+        {
             gameFlowManager.PlayerEnteredBooth();
+        }
+
+        if (boothDoor != null)
+        {
+            boothDoor.AutoCloseDoor();
+        }
     }
 }

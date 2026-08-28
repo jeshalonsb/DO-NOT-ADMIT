@@ -10,6 +10,9 @@ public class SwingDoor : Interactable
     [SerializeField] private float openAngle = 90f;
     [SerializeField] private float openSpeed = 4f;
 
+    [Header("Automatic Closing")]
+    [SerializeField] private float autoCloseDelay = 0.5f;
+
     private Quaternion closedRotation;
     private Quaternion openRotation;
 
@@ -32,9 +35,37 @@ public class SwingDoor : Interactable
             );
     }
 
+    // ==================================================
+    // PROMPT
+    // ==================================================
+
+    public override void ShowPrompt()
+    {
+        if (GameFlowManager.Instance != null &&
+            !GameFlowManager.Instance.CanUseBoothDoor)
+        {
+            HidePrompt();
+            return;
+        }
+
+        base.ShowPrompt();
+    }
+
+    // ==================================================
+    // PLAYER INTERACTION
+    // ==================================================
+
     public override void Interact()
     {
-        Debug.Log("BOOTH DOOR INTERACTED");
+        if (GameFlowManager.Instance != null &&
+            !GameFlowManager.Instance.CanUseBoothDoor)
+        {
+            Debug.Log(
+                "Booth door is currently locked."
+            );
+
+            return;
+        }
 
         if (moving)
             return;
@@ -52,6 +83,47 @@ public class SwingDoor : Interactable
         );
     }
 
+    // ==================================================
+    // AUTOMATIC CLOSING
+    // ==================================================
+
+    public void AutoCloseDoor()
+    {
+        if (!doorOpen)
+            return;
+
+        StopAllCoroutines();
+
+        StartCoroutine(
+            AutoCloseRoutine()
+        );
+    }
+
+    private IEnumerator AutoCloseRoutine()
+    {
+        yield return new WaitForSeconds(
+            autoCloseDelay
+        );
+
+        doorOpen = false;
+
+        yield return StartCoroutine(
+            RotateDoor(
+                closedRotation
+            )
+        );
+
+        HidePrompt();
+
+        Debug.Log(
+            "Booth door automatically closed."
+        );
+    }
+
+    // ==================================================
+    // ROTATION
+    // ==================================================
+
     private IEnumerator RotateDoor(
         Quaternion targetRotation)
     {
@@ -67,7 +139,8 @@ public class SwingDoor : Interactable
                 Quaternion.Slerp(
                     doorPivot.localRotation,
                     targetRotation,
-                    openSpeed * Time.deltaTime
+                    openSpeed *
+                    Time.deltaTime
                 );
 
             yield return null;
