@@ -1,23 +1,31 @@
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using System;
 
 public class ShiftClock : MonoBehaviour
 {
-    [Header("UI")]
+    [Header("Clock")]
     [SerializeField] private TMP_Text clockText;
 
     [Header("Timing")]
-    [Tooltip("Real seconds between each in-game hour.")]
     [SerializeField] private float secondsPerHour = 60f;
 
-    private int currentHour = 22; // 10 PM
+    private int currentHour = 22;
     private float timer;
-    private bool clockRunning;
+
+    private bool clockStarted;
+    private bool shiftFinished;
+
+    private readonly HashSet<string> pauseReasons =
+        new HashSet<string>();
 
     public event Action<int> OnHourChanged;
 
     public int CurrentHour => currentHour;
+
+    public bool IsPaused =>
+        pauseReasons.Count > 0;
 
     private void Start()
     {
@@ -28,7 +36,11 @@ public class ShiftClock : MonoBehaviour
     {
         currentHour = 22;
         timer = 0f;
-        clockRunning = true;
+
+        pauseReasons.Clear();
+
+        shiftFinished = false;
+        clockStarted = true;
 
         UpdateClockDisplay();
 
@@ -37,14 +49,20 @@ public class ShiftClock : MonoBehaviour
 
     private void Update()
     {
-        if (!clockRunning)
+        if (!clockStarted)
+            return;
+
+        if (shiftFinished)
+            return;
+
+        if (IsPaused)
             return;
 
         timer += Time.deltaTime;
 
         if (timer >= secondsPerHour)
         {
-            timer = 0f;
+            timer -= secondsPerHour;
 
             AdvanceHour();
         }
@@ -61,16 +79,72 @@ public class ShiftClock : MonoBehaviour
 
         OnHourChanged?.Invoke(currentHour);
 
-        Debug.Log("Current shift hour: " + clockText.text);
+        Debug.Log(
+            "Current shift hour: " +
+            clockText.text
+        );
 
-        // End shift at 6 AM
         if (currentHour == 6)
         {
-            clockRunning = false;
+            shiftFinished = true;
 
-            Debug.Log("6:00 AM - SHIFT COMPLETE");
+            Debug.Log(
+                "6:00 AM - SHIFT COMPLETE"
+            );
         }
     }
+
+    // ==================================================
+    // PAUSING
+    // ==================================================
+
+    public void PauseClock(string reason)
+    {
+        if (!clockStarted || shiftFinished)
+            return;
+
+        if (string.IsNullOrEmpty(reason))
+            reason = "Unknown";
+
+        pauseReasons.Add(reason);
+
+        Debug.Log(
+            "Clock paused: " + reason
+        );
+    }
+
+    public void ResumeClock(string reason)
+    {
+        if (!clockStarted || shiftFinished)
+            return;
+
+        if (string.IsNullOrEmpty(reason))
+            reason = "Unknown";
+
+        pauseReasons.Remove(reason);
+
+        Debug.Log(
+            "Clock pause removed: " + reason
+        );
+
+        if (!IsPaused)
+            Debug.Log("Clock resumed.");
+    }
+
+    // Compatibility if anything old still calls these
+    public void PauseClock()
+    {
+        PauseClock("Generic");
+    }
+
+    public void ResumeClock()
+    {
+        ResumeClock("Generic");
+    }
+
+    // ==================================================
+    // DISPLAY
+    // ==================================================
 
     private void UpdateClockDisplay()
     {

@@ -7,6 +7,7 @@ public class ShiftEventManager : MonoBehaviour
     [SerializeField] private Phone phone;
 
     [SerializeField] private PowerManager powerManager;
+    [SerializeField] private VisitorManager visitorManager;
 
     private void OnEnable()
     {
@@ -33,6 +34,10 @@ public class ShiftEventManager : MonoBehaviour
             case 3: // 3 AM
                 TriggerBlackout();
                 break;
+
+            case 5:
+                BeginEndOfShift();
+                break;
         }
     }
 
@@ -54,5 +59,14 @@ public class ShiftEventManager : MonoBehaviour
 
             Debug.Log("3 AM blackout triggered.");
         }
+    }
+    private void BeginEndOfShift()
+    {
+        if (visitorManager != null)
+        {
+            visitorManager.BeginShiftEnding();
+        }
+
+        Debug.Log("5 AM - No more visitors will arrive.");
     }
 }

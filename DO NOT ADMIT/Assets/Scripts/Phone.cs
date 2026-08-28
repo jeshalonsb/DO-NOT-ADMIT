@@ -16,20 +16,13 @@ public class Phone : Interactable
     [Header("Visitor Flow")]
     [SerializeField] private VisitorManager visitorManager;
 
+    [Header("Shift Clock")]
+    [SerializeField] private ShiftClock shiftClock;
+
     private bool phoneRinging;
     private bool callAnswered;
     private bool powered = true;
 
-    public override void ShowPrompt()
-    {
-        if (!phoneRinging || !powered)
-        {
-            HidePrompt();
-            return;
-        }
-
-        base.ShowPrompt();
-    }
     public void StartCall()
     {
         if (!powered)
@@ -40,17 +33,25 @@ public class Phone : Interactable
 
         phoneRinging = true;
 
+        // Freeze visitors
         if (visitorManager != null)
             visitorManager.PauseVisitorSpawning();
 
-        if (audioSource != null && ringSound != null)
+        // Freeze time
+        if (shiftClock != null)
+            shiftClock.PauseClock("Phone");
+
+        if (audioSource != null &&
+            ringSound != null)
         {
             audioSource.clip = ringSound;
             audioSource.loop = true;
             audioSource.Play();
         }
 
-        Debug.Log("PHONE IS RINGING");
+        Debug.Log(
+            "PHONE IS RINGING - CLOCK PAUSED"
+        );
     }
 
     public override void Interact()
@@ -92,35 +93,45 @@ public class Phone : Interactable
             "Still there?"
         );
 
-        yield return new WaitForSeconds(timeBetweenLines);
+        yield return new WaitForSeconds(
+            timeBetweenLines
+        );
 
         dialogueUI.ShowDialogue(
             "YOU",
             "Who is this?"
         );
 
-        yield return new WaitForSeconds(timeBetweenLines);
+        yield return new WaitForSeconds(
+            timeBetweenLines
+        );
 
         dialogueUI.ShowDialogue(
             "UNKNOWN",
             "Doesn't matter."
         );
 
-        yield return new WaitForSeconds(timeBetweenLines);
+        yield return new WaitForSeconds(
+            timeBetweenLines
+        );
 
         dialogueUI.ShowDialogue(
             "UNKNOWN",
             "Just don't trust the uniform."
         );
 
-        yield return new WaitForSeconds(timeBetweenLines);
+        yield return new WaitForSeconds(
+            timeBetweenLines
+        );
 
         dialogueUI.ShowDialogue(
             "YOU",
             "What are you talking about?"
         );
 
-        yield return new WaitForSeconds(timeBetweenLines);
+        yield return new WaitForSeconds(
+            timeBetweenLines
+        );
 
         dialogueUI.ShowDialogue(
             "UNKNOWN",
@@ -128,20 +139,24 @@ public class Phone : Interactable
         );
 
         yield return new WaitForSeconds(2f);
+
         Debug.Log("PHONE CALL ENDED");
 
+        // Visitors can continue
         if (visitorManager != null)
-        {
             visitorManager.ResumeVisitorSpawning();
-        }
+
+        // Time continues
+        if (shiftClock != null)
+            shiftClock.ResumeClock("Phone");
     }
+
     public void SetPowered(bool state)
     {
         powered = state;
 
         if (!powered)
         {
-            // Stop ringing if power dies.
             if (audioSource != null)
             {
                 audioSource.Stop();
@@ -156,5 +171,16 @@ public class Phone : Interactable
         {
             Debug.Log("Phone power restored.");
         }
+    }
+
+    public override void ShowPrompt()
+    {
+        if (!phoneRinging || !powered)
+        {
+            HidePrompt();
+            return;
+        }
+
+        base.ShowPrompt();
     }
 }

@@ -6,8 +6,6 @@ public class VisitorManager : MonoBehaviour
 {
     [Header("Visitor")]
     [SerializeField] private GameObject visitorPrefab;
-
-    [Header("Visitor Queue")]
     [SerializeField] private VisitorData[] visitors;
 
     [Header("Visitor Points")]
@@ -18,28 +16,20 @@ public class VisitorManager : MonoBehaviour
     [SerializeField] private Transform denyExitPoint;
 
     [Header("Timing")]
-    [SerializeField] private float timeBetweenVisitors = 2f;
+    [SerializeField] private float timeBetweenVisitors = 3f;
 
-    [Header("ID Card")]
+    [Header("UI")]
     [SerializeField] private IDCard idCard;
-
-    [Header("Dialogue")]
     [SerializeField] private VisitorDialogueUI dialogueUI;
 
-    [Header("Shift")]
+    [Header("Game Systems")]
     [SerializeField] private ShiftManager shiftManager;
-
-    [Header("Facility Doors")]
     [SerializeField] private FacilityDoors facilityDoors;
+    [SerializeField] private PowerManager powerManager;
 
     [Header("Impostor Settings")]
     [SerializeField] private int minimumImpostors = 1;
     [SerializeField] private int maximumImpostors = 2;
-
-    [SerializeField] private ShiftClock shiftClock;
-
-    private bool visitorSpawningPaused;
-    private bool waitingToSpawnVisitor;
 
     private readonly HashSet<int> impostorIndices =
         new HashSet<int>();
@@ -50,13 +40,17 @@ public class VisitorManager : MonoBehaviour
     private int currentVisitorIndex;
 
     private bool shiftStarted;
-
     private bool decisionMade;
 
-    private void Start()
-    {
-        StartShift();
-    }
+    private bool visitorSpawningPaused;
+    private bool waitingToSpawnVisitor;
+
+    private bool shiftEnding;
+    private bool shiftClosed;
+
+    // ==================================================
+    // SHIFT
+    // ==================================================
 
     public void StartShift()
     {
@@ -64,116 +58,200 @@ public class VisitorManager : MonoBehaviour
             return;
 
         shiftStarted = true;
+        shiftEnding = false;
+        shiftClosed = false;
+
         currentVisitorIndex = 0;
 
         GenerateImpostors();
 
-        if (shiftClock != null)
-            shiftClock.StartClock();
-
-        Debug.Log("SHIFT STARTED");
+        Debug.Log("VISITOR SHIFT STARTED");
 
         SpawnVisitor();
     }
+
+    // Called around 5 AM
+    public void BeginShiftEnding()
+    {
+        if (shiftEnding)
+            return;
+
+        shiftEnding = true;
+        waitingToSpawnVisitor = false;
+
+        Debug.Log(
+            "Shift ending soon. No more visitors will spawn."
+        );
+    }
+
+    // Called at 6 AM
+    public void CloseShift()
+    {
+        if (shiftClosed)
+            return;
+
+        shiftClosed = true;
+        shiftEnding = true;
+        waitingToSpawnVisitor = false;
+
+        Debug.Log(
+            "SHIFT CLOSED - VISITOR PROCESSING DISABLED"
+        );
+
+        if (idCard != null)
+            idCard.HideCard();
+
+        // Visitor currently standing at inspection window
+        if (currentVisitor != null)
+        {
+            if (dialogueUI != null &&
+                currentVisitor.Data != null)
+            {
+                dialogueUI.ShowDialogue(
+                    currentVisitor.Data.visitorName,
+                    "Looks like your shift's over. I'll come back later."
+                );
+            }
+
+            currentVisitor.LeaveForShiftEnd();
+        }
+
+        // Visitor who was already cleared and waiting at door
+        if (visitorWaitingAtDoor != null &&
+            visitorWaitingAtDoor != currentVisitor)
+        {
+            visitorWaitingAtDoor.LeaveForShiftEnd();
+        }
+
+        currentVisitor = null;
+        visitorWaitingAtDoor = null;
+        decisionMade = false;
+    }
+
+    // ==================================================
+    // IMPOSTORS
+    // ==================================================
 
     private void GenerateImpostors()
     {
         impostorIndices.Clear();
 
-        if (visitors == null || visitors.Length == 0)
-        {
-            Debug.LogWarning("No visitors assigned.");
+        if (visitors == null ||
+            visitors.Length == 0)
             return;
-        }
 
-        int minimum = Mathf.Clamp(
-            minimumImpostors,
-            1,
-            visitors.Length
-        );
+        int minimum =
+            Mathf.Clamp(
+                minimumImpostors,
+                0,
+                visitors.Length
+            );
 
-        int maximum = Mathf.Clamp(
-            maximumImpostors,
-            minimum,
-            visitors.Length
-        );
+        int maximum =
+            Mathf.Clamp(
+                maximumImpostors,
+                minimum,
+                visitors.Length
+            );
 
-        int impostorCount = Random.Range(
-            minimum,
-            maximum + 1
-        );
+        int impostorCount =
+            Random.Range(
+                minimum,
+                maximum + 1
+            );
 
         while (impostorIndices.Count < impostorCount)
         {
             int randomIndex =
-                Random.Range(0, visitors.Length);
+                Random.Range(
+                    0,
+                    visitors.Length
+                );
 
             impostorIndices.Add(randomIndex);
         }
 
         Debug.Log(
-            "GENERATED " +
+            "Generated " +
             impostorIndices.Count +
-            " IMPOSTORS"
+            " impostor visitors."
         );
-
-        // DEVELOPMENT ONLY.
-        // Remove these logs for the final build.
-        foreach (int index in impostorIndices)
-        {
-            Debug.Log(
-                "IMPOSTOR = " +
-                visitors[index].visitorName
-            );
-        }
     }
+
+    // ==================================================
+    // SPAWNING
+    // ==================================================
 
     private void SpawnVisitor()
     {
-        if (currentVisitorIndex >= visitors.Length)
+        if (!shiftStarted)
+            return;
+
+        if (shiftClosed)
+            return;
+
+        if (shiftEnding)
         {
-            Debug.Log("ALL VISITORS PROCESSED");
+            Debug.Log(
+                "Visitor not spawned because shift is ending."
+            );
+
             return;
         }
 
-        int visitorIndex = currentVisitorIndex;
+        if (visitorSpawningPaused)
+        {
+            waitingToSpawnVisitor = true;
+            return;
+        }
 
-        VisitorData nextVisitorData =
-            visitors[visitorIndex];
+        if (visitorPrefab == null ||
+            visitors == null ||
+            visitors.Length == 0 ||
+            spawnPoint == null)
+        {
+            Debug.LogWarning(
+                "VisitorManager is missing visitor setup."
+            );
 
-        GameObject visitorObject = Instantiate(
-            visitorPrefab,
-            spawnPoint.position,
-            spawnPoint.rotation
-        );
+            return;
+        }
 
-        currentVisitor =
+        if (currentVisitorIndex >= visitors.Length)
+            currentVisitorIndex = 0;
+
+        VisitorData visitorData =
+            visitors[currentVisitorIndex];
+
+        bool isImpostor =
+            impostorIndices.Contains(
+                currentVisitorIndex
+            );
+
+        GameObject visitorObject =
+            Instantiate(
+                visitorPrefab,
+                spawnPoint.position,
+                spawnPoint.rotation
+            );
+
+        Visitor visitor =
             visitorObject.GetComponent<Visitor>();
 
-        if (currentVisitor == null)
+        if (visitor == null)
         {
-            Debug.LogError(
-                "Visitor prefab does not contain Visitor.cs!"
+            Debug.LogWarning(
+                "Visitor prefab has no Visitor component."
             );
 
             Destroy(visitorObject);
             return;
         }
 
-        // Give them their real identity first.
-        currentVisitor.SetVisitorData(
-            nextVisitorData
-        );
+        visitor.SetVisitorData(visitorData);
+        visitor.SetImpostor(isImpostor);
 
-        // Decide if THIS visitor is an impostor this shift.
-        bool isImpostor =
-            impostorIndices.Contains(visitorIndex);
-
-        currentVisitor.SetImpostor(
-            isImpostor
-        );
-
-        currentVisitor.Setup(
+        visitor.Setup(
             inspectionPoint,
             doorWaitPoint,
             entryExitPoint,
@@ -181,39 +259,123 @@ public class VisitorManager : MonoBehaviour
             this
         );
 
-        Debug.Log(
-            "SPAWNING: " +
-            nextVisitorData.visitorName +
-            " | IMPOSTOR: " +
-            isImpostor
-        );
+        currentVisitor = visitor;
 
         currentVisitorIndex++;
+
+        Debug.Log(
+            "Spawned visitor: " +
+            visitorData.visitorName
+        );
     }
 
-    public void VisitorReady(Visitor visitor)
+    private IEnumerator SpawnNextVisitor()
     {
+        yield return new WaitForSeconds(
+            timeBetweenVisitors
+        );
+
+        if (shiftClosed)
+            yield break;
+
+        if (shiftEnding)
+        {
+            Debug.Log(
+                "No next visitor because shift is ending."
+            );
+
+            yield break;
+        }
+
+        if (visitorSpawningPaused)
+        {
+            waitingToSpawnVisitor = true;
+
+            Debug.Log(
+                "Next visitor waiting because spawning is paused."
+            );
+
+            yield break;
+        }
+
+        SpawnVisitor();
+    }
+
+    // ==================================================
+    // VISITOR ARRIVAL
+    // ==================================================
+
+    public void VisitorReady(
+        Visitor visitor)
+    {
+        if (shiftClosed)
+        {
+            visitor.LeaveForShiftEnd();
+            return;
+        }
+
         currentVisitor = visitor;
         decisionMade = false;
 
         if (idCard != null)
-        {
             idCard.DisplayVisitor(visitor);
-        }
 
-        if (dialogueUI != null)
+        if (dialogueUI != null &&
+            visitor.Data != null)
         {
             dialogueUI.ShowDialogue(
                 visitor.Data.visitorName,
                 visitor.Data.arrivalDialogue
             );
         }
+
+        Debug.Log(
+            "Visitor ready for inspection."
+        );
     }
+
+    // ==================================================
+    // CLEAR
+    // ==================================================
 
     public void ClearCurrentVisitor()
     {
-        if (currentVisitor == null || decisionMade)
+        if (shiftClosed)
+        {
+            Debug.Log(
+                "Checkpoint is closed."
+            );
+
             return;
+        }
+
+        if (powerManager != null &&
+            !powerManager.PowerOn)
+        {
+            Debug.Log(
+                "CLEAR unavailable during power outage."
+            );
+
+            return;
+        }
+
+        if (currentVisitor == null)
+        {
+            Debug.Log(
+                "No visitor available to clear."
+            );
+
+            return;
+        }
+
+        if (decisionMade)
+        {
+            Debug.Log(
+                "Decision already made for this visitor."
+            );
+
+            return;
+        }
 
         decisionMade = true;
 
@@ -226,7 +388,8 @@ public class VisitorManager : MonoBehaviour
             );
         }
 
-        if (dialogueUI != null)
+        if (dialogueUI != null &&
+            currentVisitor.Data != null)
         {
             dialogueUI.ShowDialogue(
                 currentVisitor.Data.visitorName,
@@ -235,12 +398,54 @@ public class VisitorManager : MonoBehaviour
         }
 
         currentVisitor.Clear();
+
+        Debug.Log(
+            "PLAYER CHOSE CLEAR"
+        );
     }
+
+    // ==================================================
+    // DENY
+    // ==================================================
 
     public void DenyCurrentVisitor()
     {
-        if (currentVisitor == null || decisionMade)
+        if (shiftClosed)
+        {
+            Debug.Log(
+                "Checkpoint is closed."
+            );
+
             return;
+        }
+
+        if (powerManager != null &&
+            !powerManager.PowerOn)
+        {
+            Debug.Log(
+                "DENY unavailable during power outage."
+            );
+
+            return;
+        }
+
+        if (currentVisitor == null)
+        {
+            Debug.Log(
+                "No visitor available to deny."
+            );
+
+            return;
+        }
+
+        if (decisionMade)
+        {
+            Debug.Log(
+                "Decision already made for this visitor."
+            );
+
+            return;
+        }
 
         decisionMade = true;
 
@@ -253,7 +458,8 @@ public class VisitorManager : MonoBehaviour
             );
         }
 
-        if (dialogueUI != null)
+        if (dialogueUI != null &&
+            currentVisitor.Data != null)
         {
             dialogueUI.ShowDialogue(
                 currentVisitor.Data.visitorName,
@@ -262,85 +468,204 @@ public class VisitorManager : MonoBehaviour
         }
 
         currentVisitor.Deny();
+
+        Debug.Log(
+            "PLAYER CHOSE DENY"
+        );
     }
+
+    // ==================================================
+    // FACILITY DOOR
+    // ==================================================
 
     public void VisitorWaitingAtDoor(
         Visitor visitor)
     {
+        if (shiftClosed)
+        {
+            visitor.LeaveForShiftEnd();
+            return;
+        }
+
         visitorWaitingAtDoor = visitor;
 
         Debug.Log(
-            "Visitor ready for facility door unlock."
+            "Visitor waiting for facility door unlock."
         );
     }
 
     public void UnlockFacilityDoor()
     {
+        if (shiftClosed)
+        {
+            Debug.Log(
+                "Checkpoint is closed."
+            );
+
+            return;
+        }
+
+        if (powerManager != null &&
+            !powerManager.PowerOn)
+        {
+            Debug.Log(
+                "FACILITY UNLOCK unavailable during power outage."
+            );
+
+            return;
+        }
+
         if (visitorWaitingAtDoor == null)
         {
-            Debug.LogWarning(
-                "No visitor currently waiting at facility door."
+            Debug.Log(
+                "No visitor waiting at facility entrance."
             );
 
             return;
         }
 
         if (facilityDoors != null)
-        {
             facilityDoors.OpenDoors();
-        }
 
         visitorWaitingAtDoor.UnlockDoor();
 
         visitorWaitingAtDoor = null;
+
+        Debug.Log(
+            "Facility entrance unlocked."
+        );
     }
+
+    // ==================================================
+    // VISITOR FINISHED
+    // ==================================================
 
     public void VisitorFinished()
     {
         if (idCard != null)
-        {
             idCard.HideCard();
-        }
 
         currentVisitor = null;
+        visitorWaitingAtDoor = null;
+
+        decisionMade = false;
+
+        if (shiftClosed)
+            return;
+
+        if (shiftEnding)
+        {
+            Debug.Log(
+                "Visitor finished. Shift is ending, so no replacement visitor."
+            );
+
+            return;
+        }
 
         StartCoroutine(
             SpawnNextVisitor()
         );
     }
 
-    private IEnumerator SpawnNextVisitor()
-    {
-        yield return new WaitForSeconds(timeBetweenVisitors);
+    // ==================================================
+    // PAUSE / RESUME SPAWNING
+    // ==================================================
 
-        if (visitorSpawningPaused)
-        {
-            waitingToSpawnVisitor = true;
-
-            Debug.Log("Next visitor waiting because visitor spawning is paused.");
-
-            yield break;
-        }
-
-        SpawnVisitor();
-    }
     public void PauseVisitorSpawning()
     {
         visitorSpawningPaused = true;
 
-        Debug.Log("Visitor spawning paused.");
+        Debug.Log(
+            "Visitor spawning paused."
+        );
     }
 
     public void ResumeVisitorSpawning()
     {
+        if (shiftEnding ||
+            shiftClosed)
+            return;
+
         visitorSpawningPaused = false;
 
-        Debug.Log("Visitor spawning resumed.");
+        Debug.Log(
+            "Visitor spawning resumed."
+        );
 
         if (waitingToSpawnVisitor)
         {
             waitingToSpawnVisitor = false;
-            StartCoroutine(SpawnNextVisitor());
+
+            StartCoroutine(
+                SpawnNextVisitor()
+            );
         }
+    }
+
+    // ==================================================
+    // BLACKOUT REACTION
+    // ==================================================
+
+    public void HandleBlackoutVisitor()
+    {
+        if (shiftClosed)
+            return;
+
+        if (currentVisitor == null)
+            return;
+
+        if (currentVisitor.Data == null)
+            return;
+
+        if (dialogueUI == null)
+            return;
+
+        string line;
+
+        if (currentVisitor.IsImpostor)
+        {
+            string[] impostorLines =
+            {
+                "Convenient timing.",
+                "Guess you'll have to take my word for it.",
+                "Power issues? That's unfortunate.",
+                "...Everything okay in there?"
+            };
+
+            line =
+                impostorLines[
+                    Random.Range(
+                        0,
+                        impostorLines.Length
+                    )
+                ];
+        }
+        else
+        {
+            string[] normalLines =
+            {
+                "Whoa. What happened?",
+                "Did the power just go out?",
+                "Uh... is that normal?",
+                "Great. Perfect timing."
+            };
+
+            line =
+                normalLines[
+                    Random.Range(
+                        0,
+                        normalLines.Length
+                    )
+                ];
+        }
+
+        dialogueUI.ShowDialogue(
+            currentVisitor.Data.visitorName,
+            line
+        );
+
+        Debug.Log(
+            "Visitor reacted to blackout."
+        );
     }
 }

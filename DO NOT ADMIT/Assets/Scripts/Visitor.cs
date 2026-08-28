@@ -18,18 +18,50 @@ public class Visitor : MonoBehaviour
 
     private VisitorData visitorData;
 
-    public VisitorData Data => visitorData;
+    public VisitorData Data =>
+        visitorData;
 
-    public bool IsImpostor { get; private set; }
+    public bool IsImpostor
+    {
+        get;
+        private set;
+    }
 
-    public CorrectDecision CorrectDecision { get; private set; }
+    public CorrectDecision CorrectDecision
+    {
+        get;
+        private set;
+    }
 
-    // Runtime ID information
-    public string DisplayName { get; private set; }
-    public string DisplayEmployeeID { get; private set; }
-    public string DisplayDepartment { get; private set; }
-    public string DisplayClearance { get; private set; }
-    public string DisplayStatus { get; private set; }
+    public string DisplayName
+    {
+        get;
+        private set;
+    }
+
+    public string DisplayEmployeeID
+    {
+        get;
+        private set;
+    }
+
+    public string DisplayDepartment
+    {
+        get;
+        private set;
+    }
+
+    public string DisplayClearance
+    {
+        get;
+        private set;
+    }
+
+    public string DisplayStatus
+    {
+        get;
+        private set;
+    }
 
     private Transform inspectionPoint;
     private Transform doorWaitPoint;
@@ -42,30 +74,43 @@ public class Visitor : MonoBehaviour
 
     private VisitorState currentState;
 
-    public void SetVisitorData(VisitorData data)
+    // ==================================================
+    // DATA
+    // ==================================================
+
+    public void SetVisitorData(
+        VisitorData data)
     {
         visitorData = data;
 
-        // Start with completely legitimate credentials.
-        DisplayName = data.visitorName;
-        DisplayEmployeeID = data.employeeID;
-        DisplayDepartment = data.department;
-        DisplayClearance = data.clearanceLevel;
-        DisplayStatus = data.employeeStatus;
+        DisplayName =
+            data.visitorName;
+
+        DisplayEmployeeID =
+            data.employeeID;
+
+        DisplayDepartment =
+            data.department;
+
+        DisplayClearance =
+            data.clearanceLevel;
+
+        DisplayStatus =
+            data.employeeStatus;
     }
 
-    public void SetImpostor(bool isImpostor)
+    public void SetImpostor(
+        bool isImpostor)
     {
         IsImpostor = isImpostor;
 
-        CorrectDecision = isImpostor
-            ? CorrectDecision.Deny
-            : CorrectDecision.Clear;
+        CorrectDecision =
+            isImpostor
+                ? CorrectDecision.Deny
+                : CorrectDecision.Clear;
 
         if (isImpostor)
-        {
             GenerateFakeCredential();
-        }
 
         Debug.Log(
             visitorData.visitorName +
@@ -74,53 +119,89 @@ public class Visitor : MonoBehaviour
         );
     }
 
+    // ==================================================
+    // FAKE CREDENTIAL
+    // ==================================================
+
     private void GenerateFakeCredential()
     {
-        int discrepancy = Random.Range(0, 4);
+        int discrepancy =
+            Random.Range(0, 4);
 
         switch (discrepancy)
         {
-            // Wrong employee ID
             case 0:
-                DisplayEmployeeID = GenerateWrongID();
-                Debug.Log(visitorData.visitorName + " has WRONG ID");
+
+                DisplayEmployeeID =
+                    GenerateWrongID();
+
+                Debug.Log(
+                    visitorData.visitorName +
+                    " has WRONG ID"
+                );
+
                 break;
 
-            // Wrong department
             case 1:
-                DisplayDepartment = GetWrongDepartment();
-                Debug.Log(visitorData.visitorName + " has WRONG DEPARTMENT");
+
+                DisplayDepartment =
+                    GetWrongDepartment();
+
+                Debug.Log(
+                    visitorData.visitorName +
+                    " has WRONG DEPARTMENT"
+                );
+
                 break;
 
-            // Wrong clearance
             case 2:
-                DisplayClearance = GetWrongClearance();
-                Debug.Log(visitorData.visitorName + " has WRONG CLEARANCE");
+
+                DisplayClearance =
+                    GetWrongClearance();
+
+                Debug.Log(
+                    visitorData.visitorName +
+                    " has WRONG CLEARANCE"
+                );
+
                 break;
 
-            // Fake status
             case 3:
-                DisplayStatus = "TERMINATED";
-                Debug.Log(visitorData.visitorName + " has WRONG STATUS");
+
+                DisplayStatus =
+                    "TERMINATED";
+
+                Debug.Log(
+                    visitorData.visitorName +
+                    " has WRONG STATUS"
+                );
+
                 break;
         }
     }
 
     private string GenerateWrongID()
     {
-        if (int.TryParse(visitorData.employeeID, out int originalID))
+        if (int.TryParse(
+            visitorData.employeeID,
+            out int originalID))
         {
-            int fakeID = originalID;
+            int fakeID =
+                originalID;
 
             while (fakeID == originalID)
             {
-                fakeID = originalID + Random.Range(1, 10);
+                fakeID =
+                    originalID +
+                    Random.Range(1, 10);
             }
 
             return fakeID.ToString();
         }
 
-        return visitorData.employeeID + "9";
+        return
+            visitorData.employeeID +
+            "9";
     }
 
     private string GetWrongDepartment()
@@ -134,12 +215,20 @@ public class Visitor : MonoBehaviour
             "Administration"
         };
 
-        string fakeDepartment = visitorData.department;
+        string fakeDepartment =
+            visitorData.department;
 
-        while (fakeDepartment == visitorData.department)
+        while (
+            fakeDepartment ==
+            visitorData.department)
         {
             fakeDepartment =
-                departments[Random.Range(0, departments.Length)];
+                departments[
+                    Random.Range(
+                        0,
+                        departments.Length
+                    )
+                ];
         }
 
         return fakeDepartment;
@@ -155,16 +244,28 @@ public class Visitor : MonoBehaviour
             "D"
         };
 
-        string fakeClearance = visitorData.clearanceLevel;
+        string fakeClearance =
+            visitorData.clearanceLevel;
 
-        while (fakeClearance == visitorData.clearanceLevel)
+        while (
+            fakeClearance ==
+            visitorData.clearanceLevel)
         {
             fakeClearance =
-                clearances[Random.Range(0, clearances.Length)];
+                clearances[
+                    Random.Range(
+                        0,
+                        clearances.Length
+                    )
+                ];
         }
 
         return fakeClearance;
     }
+
+    // ==================================================
+    // SETUP
+    // ==================================================
 
     public void Setup(
         Transform inspection,
@@ -173,16 +274,31 @@ public class Visitor : MonoBehaviour
         Transform denyExit,
         VisitorManager manager)
     {
-        inspectionPoint = inspection;
-        doorWaitPoint = doorWait;
-        entryExitPoint = entryExit;
-        denyExitPoint = denyExit;
+        inspectionPoint =
+            inspection;
 
-        visitorManager = manager;
+        doorWaitPoint =
+            doorWait;
 
-        currentState = VisitorState.MovingToInspection;
-        targetPosition = inspectionPoint.position;
+        entryExitPoint =
+            entryExit;
+
+        denyExitPoint =
+            denyExit;
+
+        visitorManager =
+            manager;
+
+        currentState =
+            VisitorState.MovingToInspection;
+
+        targetPosition =
+            inspectionPoint.position;
     }
+
+    // ==================================================
+    // UPDATE
+    // ==================================================
 
     private void Update()
     {
@@ -195,80 +311,142 @@ public class Visitor : MonoBehaviour
     private bool IsMoving()
     {
         return
-            currentState == VisitorState.MovingToInspection ||
-            currentState == VisitorState.MovingToDoor ||
-            currentState == VisitorState.LeavingDenied ||
-            currentState == VisitorState.EnteringFacility;
+            currentState ==
+            VisitorState.MovingToInspection ||
+
+            currentState ==
+            VisitorState.MovingToDoor ||
+
+            currentState ==
+            VisitorState.LeavingDenied ||
+
+            currentState ==
+            VisitorState.EnteringFacility;
     }
+
+    // ==================================================
+    // MOVEMENT
+    // ==================================================
 
     private void MoveVisitor()
     {
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            targetPosition,
-            moveSpeed * Time.deltaTime
-        );
+        transform.position =
+            Vector3.MoveTowards(
+                transform.position,
+                targetPosition,
+                moveSpeed *
+                Time.deltaTime
+            );
 
-        Vector3 direction = targetPosition - transform.position;
+        Vector3 direction =
+            targetPosition -
+            transform.position;
+
         direction.y = 0f;
 
-        if (direction.sqrMagnitude > 0.001f)
+        if (
+            direction.sqrMagnitude >
+            0.001f)
         {
             Quaternion targetRotation =
-                Quaternion.LookRotation(direction);
+                Quaternion.LookRotation(
+                    direction
+                );
 
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                rotationSpeed * Time.deltaTime
-            );
+            transform.rotation =
+                Quaternion.Slerp(
+                    transform.rotation,
+                    targetRotation,
+                    rotationSpeed *
+                    Time.deltaTime
+                );
         }
 
-        if (Vector3.Distance(transform.position, targetPosition) < 0.05f)
+        if (
+            Vector3.Distance(
+                transform.position,
+                targetPosition
+            ) < 0.05f)
         {
             ArrivedAtTarget();
         }
     }
 
+    // ==================================================
+    // ARRIVAL
+    // ==================================================
+
     private void ArrivedAtTarget()
     {
         switch (currentState)
         {
-            case VisitorState.MovingToInspection:
+            case VisitorState
+                .MovingToInspection:
 
-                currentState = VisitorState.WaitingForDecision;
+                currentState =
+                    VisitorState
+                        .WaitingForDecision;
 
-                Debug.Log("Visitor waiting for inspection.");
+                Debug.Log(
+                    "Visitor waiting for inspection."
+                );
 
-                visitorManager.VisitorReady(this);
+                if (visitorManager != null)
+                {
+                    visitorManager
+                        .VisitorReady(this);
+                }
 
                 break;
 
-            case VisitorState.MovingToDoor:
+            case VisitorState
+                .MovingToDoor:
 
-                currentState = VisitorState.WaitingAtDoor;
+                currentState =
+                    VisitorState
+                        .WaitingAtDoor;
 
-                Debug.Log("Visitor waiting at facility entrance.");
+                Debug.Log(
+                    "Visitor waiting at facility entrance."
+                );
 
-                visitorManager.VisitorWaitingAtDoor(this);
+                if (visitorManager != null)
+                {
+                    visitorManager
+                        .VisitorWaitingAtDoor(this);
+                }
 
                 break;
 
-            case VisitorState.LeavingDenied:
+            case VisitorState
+                .LeavingDenied:
 
-                Debug.Log("Denied visitor has left.");
+                Debug.Log(
+                    "Visitor has left."
+                );
 
-                visitorManager.VisitorFinished();
+                if (visitorManager != null)
+                {
+                    visitorManager
+                        .VisitorFinished();
+                }
 
                 Destroy(gameObject);
 
                 break;
 
-            case VisitorState.EnteringFacility:
+            case VisitorState
+                .EnteringFacility:
 
-                Debug.Log("Visitor entered facility.");
+                Debug.Log(
+                    "Visitor entered facility."
+                );
 
-                visitorManager.VisitorFinished();
+                if (visitorManager != null)
+                {
+                    visitorManager
+                        .VisitorFinished();
+                }
 
                 Destroy(gameObject);
 
@@ -276,31 +454,51 @@ public class Visitor : MonoBehaviour
         }
     }
 
+    // ==================================================
+    // PLAYER DECISIONS
+    // ==================================================
+
     public void Clear()
     {
-        if (currentState != VisitorState.WaitingForDecision)
+        if (
+            currentState !=
+            VisitorState.WaitingForDecision)
             return;
 
-        Debug.Log("Visitor cleared.");
+        Debug.Log(
+            "Visitor cleared."
+        );
 
-        currentState = VisitorState.MovingToDoor;
-        targetPosition = doorWaitPoint.position;
+        currentState =
+            VisitorState.MovingToDoor;
+
+        targetPosition =
+            doorWaitPoint.position;
     }
 
     public void Deny()
     {
-        if (currentState != VisitorState.WaitingForDecision)
+        if (
+            currentState !=
+            VisitorState.WaitingForDecision)
             return;
 
-        Debug.Log("Visitor denied.");
+        Debug.Log(
+            "Visitor denied."
+        );
 
-        currentState = VisitorState.LeavingDenied;
-        targetPosition = denyExitPoint.position;
+        currentState =
+            VisitorState.LeavingDenied;
+
+        targetPosition =
+            denyExitPoint.position;
     }
 
     public void UnlockDoor()
     {
-        if (currentState != VisitorState.WaitingAtDoor)
+        if (
+            currentState !=
+            VisitorState.WaitingAtDoor)
         {
             Debug.LogWarning(
                 "Visitor is not waiting at the facility door."
@@ -309,9 +507,42 @@ public class Visitor : MonoBehaviour
             return;
         }
 
-        currentState = VisitorState.EnteringFacility;
-        targetPosition = entryExitPoint.position;
+        currentState =
+            VisitorState.EnteringFacility;
 
-        Debug.Log("Visitor entering facility.");
+        targetPosition =
+            entryExitPoint.position;
+
+        Debug.Log(
+            "Visitor entering facility."
+        );
+    }
+
+    // ==================================================
+    // SHIFT END
+    // ==================================================
+
+    public void LeaveForShiftEnd()
+    {
+        if (denyExitPoint == null)
+        {
+            Debug.LogWarning(
+                "Visitor has no deny exit point."
+            );
+
+            Destroy(gameObject);
+            return;
+        }
+
+        currentState =
+            VisitorState.LeavingDenied;
+
+        targetPosition =
+            denyExitPoint.position;
+
+        Debug.Log(
+            visitorData.visitorName +
+            " is leaving because the shift ended."
+        );
     }
 }

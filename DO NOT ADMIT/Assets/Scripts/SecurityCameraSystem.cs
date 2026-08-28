@@ -2,40 +2,104 @@ using UnityEngine;
 
 public class SecurityCameraSystem : MonoBehaviour
 {
-    [Header("Security Cameras")]
-    [SerializeField] private Camera facilityEntranceCamera;
-    [SerializeField] private Camera employeeParkingCamera;
-    [SerializeField] private Camera perimeterGateCamera;
-    [SerializeField] private Camera rearFacilityCamera;
+    [Header("Cameras")]
+    [SerializeField] private Camera facilityEntrance;
+    [SerializeField] private Camera employeeParking;
+    [SerializeField] private Camera perimeterGate;
+    [SerializeField] private Camera facilityRear;
+
+    [Header("Monitor Feeds")]
+    [SerializeField] private GameObject facilityEntranceFeed;
+    [SerializeField] private GameObject employeeParkingFeed;
+    [SerializeField] private GameObject perimeterGateFeed;
+    [SerializeField] private GameObject facilityRearFeed;
+
+    [Header("No Signal")]
+    [SerializeField] private GameObject facilityEntranceNoSignal;
+    [SerializeField] private GameObject employeeParkingNoSignal;
+    [SerializeField] private GameObject perimeterGateNoSignal;
+    [SerializeField] private GameObject facilityRearNoSignal;
+
+    private void Start()
+    {
+        // Game starts with every camera functioning.
+        RestoreAllCameras();
+    }
 
     public void DisableAllCameras()
     {
-        facilityEntranceCamera.enabled = false;
-        employeeParkingCamera.enabled = false;
-        perimeterGateCamera.enabled = false;
-        rearFacilityCamera.enabled = false;
+        SetCamera(facilityEntrance, false);
+        SetCamera(employeeParking, false);
+        SetCamera(perimeterGate, false);
+        SetCamera(facilityRear, false);
 
-        Debug.Log("All security cameras offline.");
+        SetActive(facilityEntranceFeed, false);
+        SetActive(employeeParkingFeed, false);
+        SetActive(perimeterGateFeed, false);
+        SetActive(facilityRearFeed, false);
+
+        SetActive(facilityEntranceNoSignal, false);
+        SetActive(employeeParkingNoSignal, false);
+        SetActive(perimeterGateNoSignal, false);
+        SetActive(facilityRearNoSignal, false);
+
+        Debug.Log("CCTV power lost.");
     }
 
     public void RestoreAfterBlackout()
     {
-        // Gameplay-critical camera returns.
-        facilityEntranceCamera.enabled = true;
+        // CAM 01 survives.
+        SetCamera(facilityEntrance, true);
+        SetActive(facilityEntranceFeed, true);
+        SetActive(facilityEntranceNoSignal, false);
 
-        // Other cameras remain damaged.
-        employeeParkingCamera.enabled = false;
-        perimeterGateCamera.enabled = false;
-        rearFacilityCamera.enabled = false;
+        // CAM 02 fails.
+        SetCamera(employeeParking, false);
+        SetActive(employeeParkingFeed, false);
+        SetActive(employeeParkingNoSignal, true);
 
-        Debug.Log("CAM 01 restored. Remaining cameras offline.");
+        // CAM 03 fails.
+        SetCamera(perimeterGate, false);
+        SetActive(perimeterGateFeed, false);
+        SetActive(perimeterGateNoSignal, true);
+
+        // CAM 04 fails.
+        SetCamera(facilityRear, false);
+        SetActive(facilityRearFeed, false);
+        SetActive(facilityRearNoSignal, true);
+
+        Debug.Log("CCTV partially restored.");
     }
 
     public void RestoreAllCameras()
     {
-        facilityEntranceCamera.enabled = true;
-        employeeParkingCamera.enabled = true;
-        perimeterGateCamera.enabled = true;
-        rearFacilityCamera.enabled = true;
+        SetCamera(facilityEntrance, true);
+        SetCamera(employeeParking, true);
+        SetCamera(perimeterGate, true);
+        SetCamera(facilityRear, true);
+
+        SetActive(facilityEntranceFeed, true);
+        SetActive(employeeParkingFeed, true);
+        SetActive(perimeterGateFeed, true);
+        SetActive(facilityRearFeed, true);
+
+        SetActive(facilityEntranceNoSignal, false);
+        SetActive(employeeParkingNoSignal, false);
+        SetActive(perimeterGateNoSignal, false);
+        SetActive(facilityRearNoSignal, false);
+
+        Debug.Log("All CCTV cameras online.");
+    }
+
+    private void SetCamera(Camera cameraToSet, bool state)
+    {
+        if (cameraToSet != null)
+            cameraToSet.enabled = state;
+    }
+
+    private void SetActive(GameObject obj, bool state)
+    {
+        if (obj != null)
+            obj.SetActive(state);
     }
 }
