@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -48,6 +49,12 @@ public class VisitorManager : MonoBehaviour
     private bool shiftEnding;
     private bool shiftClosed;
 
+    // If 6 AM happens while a cleared visitor
+    // still needs to enter the facility.
+    private bool waitingForFinalClearedVisitor;
+
+    public event Action OnShiftReadyToFinish;
+
     // ==================================================
     // SHIFT
     // ==================================================
@@ -60,6 +67,7 @@ public class VisitorManager : MonoBehaviour
         shiftStarted = true;
         shiftEnding = false;
         shiftClosed = false;
+        waitingForFinalClearedVisitor = false;
 
         currentVisitorIndex = 0;
 
@@ -70,7 +78,7 @@ public class VisitorManager : MonoBehaviour
         SpawnVisitor();
     }
 
-    // Called around 5 AM
+    // Called around 5 AM.
     public void BeginShiftEnding()
     {
         if (shiftEnding)
@@ -84,25 +92,88 @@ public class VisitorManager : MonoBehaviour
         );
     }
 
-    // Called at 6 AM
-    public void CloseShift()
+    // ==================================================
+    // 6 AM
+    // ==================================================
+
+    /*
+     * Returns TRUE if the shift can finish immediately.
+     *
+     * Returns FALSE if a cleared visitor still needs
+     * to finish entering first.
+     */
+    public bool CloseShift()
     {
         if (shiftClosed)
-            return;
+            return true;
 
-        shiftClosed = true;
         shiftEnding = true;
         waitingToSpawnVisitor = false;
 
         Debug.Log(
-            "SHIFT CLOSED - VISITOR PROCESSING DISABLED"
+            "6 AM - CHECKING FINAL VISITOR STATE"
         );
 
         if (idCard != null)
             idCard.HideCard();
 
-        // Visitor currently standing at inspection window
-        if (currentVisitor != null)
+        // --------------------------------------------------
+        // CLEARED VISITOR
+        //
+        // If they were already cleared before 6 AM,
+        // they must finish entering.
+        // --------------------------------------------------
+
+        if (currentVisitor != null &&
+            currentVisitor.IsPendingFacilityEntry)
+        {
+            waitingForFinalClearedVisitor = true;
+
+            Debug.Log(
+                "Shift waiting for final cleared visitor to enter."
+            );
+
+            return false;
+        }
+
+        if (visitorWaitingAtDoor != null)
+        {
+            waitingForFinalClearedVisitor = true;
+
+            Debug.Log(
+                "Shift waiting for visitor at facility door."
+            );
+
+            return false;
+        }
+
+        // --------------------------------------------------
+        // ALREADY DENIED
+        //
+        // Keep their denial dialogue.
+        // Don't replace it with the 6 AM dialogue.
+        // --------------------------------------------------
+
+        if (currentVisitor != null &&
+            currentVisitor.IsLeavingDenied)
+        {
+            Debug.Log(
+                "Visitor was already denied. Keeping original dialogue."
+            );
+
+            FinalizeShiftClosure();
+            return true;
+        }
+
+        // --------------------------------------------------
+        // UNDECIDED VISITOR
+        //
+        // Only undecided visitors get the
+        // "shift's over" dialogue.
+        // --------------------------------------------------
+
+        if (currentVisitor != null &&
+            currentVisitor.IsUndecided)
         {
             if (dialogueUI != null &&
                 currentVisitor.Data != null)
@@ -114,18 +185,33 @@ public class VisitorManager : MonoBehaviour
             }
 
             currentVisitor.LeaveForShiftEnd();
+
+            FinalizeShiftClosure();
+            return true;
         }
 
-        // Visitor who was already cleared and waiting at door
-        if (visitorWaitingAtDoor != null &&
-            visitorWaitingAtDoor != currentVisitor)
-        {
-            visitorWaitingAtDoor.LeaveForShiftEnd();
-        }
+        // Nobody is currently being processed.
+        FinalizeShiftClosure();
 
-        currentVisitor = null;
-        visitorWaitingAtDoor = null;
-        decisionMade = false;
+        return true;
+    }
+
+    private void FinalizeShiftClosure()
+    {
+        if (shiftClosed)
+            return;
+
+        shiftClosed = true;
+        shiftEnding = true;
+        waitingForFinalClearedVisitor = false;
+        waitingToSpawnVisitor = false;
+
+        if (idCard != null)
+            idCard.HideCard();
+
+        Debug.Log(
+            "SHIFT CLOSED - VISITOR PROCESSING DISABLED"
+        );
     }
 
     // ==================================================
@@ -138,7 +224,9 @@ public class VisitorManager : MonoBehaviour
 
         if (visitors == null ||
             visitors.Length == 0)
+        {
             return;
+        }
 
         int minimum =
             Mathf.Clamp(
@@ -155,20 +243,24 @@ public class VisitorManager : MonoBehaviour
             );
 
         int impostorCount =
-            Random.Range(
+            UnityEngine.Random.Range(
                 minimum,
                 maximum + 1
             );
 
-        while (impostorIndices.Count < impostorCount)
+        while (
+            impostorIndices.Count <
+            impostorCount)
         {
             int randomIndex =
-                Random.Range(
+                UnityEngine.Random.Range(
                     0,
                     visitors.Length
                 );
 
-            impostorIndices.Add(randomIndex);
+            impostorIndices.Add(
+                randomIndex
+            );
         }
 
         Debug.Log(
@@ -218,7 +310,9 @@ public class VisitorManager : MonoBehaviour
         }
 
         if (currentVisitorIndex >= visitors.Length)
+        {
             currentVisitorIndex = 0;
+        }
 
         VisitorData visitorData =
             visitors[currentVisitorIndex];
@@ -248,8 +342,13 @@ public class VisitorManager : MonoBehaviour
             return;
         }
 
-        visitor.SetVisitorData(visitorData);
-        visitor.SetImpostor(isImpostor);
+        visitor.SetVisitorData(
+            visitorData
+        );
+
+        visitor.SetImpostor(
+            isImpostor
+        );
 
         visitor.Setup(
             inspectionPoint,
@@ -318,7 +417,11 @@ public class VisitorManager : MonoBehaviour
         decisionMade = false;
 
         if (idCard != null)
-            idCard.DisplayVisitor(visitor);
+        {
+            idCard.DisplayVisitor(
+                visitor
+            );
+        }
 
         if (dialogueUI != null &&
             visitor.Data != null)
@@ -456,6 +559,10 @@ public class VisitorManager : MonoBehaviour
                 currentVisitor.CorrectDecision,
                 CorrectDecision.Deny
             );
+
+            shiftManager.RegisterDeniedVisitor(
+                currentVisitor
+            );
         }
 
         if (dialogueUI != null &&
@@ -487,7 +594,8 @@ public class VisitorManager : MonoBehaviour
             return;
         }
 
-        visitorWaitingAtDoor = visitor;
+        visitorWaitingAtDoor =
+            visitor;
 
         Debug.Log(
             "Visitor waiting for facility door unlock."
@@ -524,10 +632,22 @@ public class VisitorManager : MonoBehaviour
             return;
         }
 
-        if (facilityDoors != null)
-            facilityDoors.OpenDoors();
+        Visitor admittedVisitor =
+            visitorWaitingAtDoor;
 
-        visitorWaitingAtDoor.UnlockDoor();
+        if (facilityDoors != null)
+        {
+            facilityDoors.OpenDoors();
+        }
+
+        if (shiftManager != null)
+        {
+            shiftManager.RegisterAdmittedVisitor(
+                admittedVisitor
+            );
+        }
+
+        admittedVisitor.UnlockDoor();
 
         visitorWaitingAtDoor = null;
 
@@ -540,15 +660,39 @@ public class VisitorManager : MonoBehaviour
     // VISITOR FINISHED
     // ==================================================
 
-    public void VisitorFinished()
+    public void VisitorFinished(
+        Visitor visitor)
     {
         if (idCard != null)
             idCard.HideCard();
 
-        currentVisitor = null;
-        visitorWaitingAtDoor = null;
+        if (currentVisitor == visitor)
+            currentVisitor = null;
+
+        if (visitorWaitingAtDoor == visitor)
+            visitorWaitingAtDoor = null;
 
         decisionMade = false;
+
+        // ----------------------------------------------
+        // SPECIAL 6 AM CASE
+        //
+        // The last cleared visitor has now entered,
+        // so the shift is finally allowed to finish.
+        // ----------------------------------------------
+
+        if (waitingForFinalClearedVisitor)
+        {
+            Debug.Log(
+                "Final cleared visitor finished entering. Shift can now end."
+            );
+
+            FinalizeShiftClosure();
+
+            OnShiftReadyToFinish?.Invoke();
+
+            return;
+        }
 
         if (shiftClosed)
             return;
@@ -584,9 +728,12 @@ public class VisitorManager : MonoBehaviour
     {
         if (shiftEnding ||
             shiftClosed)
+        {
             return;
+        }
 
-        visitorSpawningPaused = false;
+        visitorSpawningPaused =
+            false;
 
         Debug.Log(
             "Visitor spawning resumed."
@@ -594,7 +741,8 @@ public class VisitorManager : MonoBehaviour
 
         if (waitingToSpawnVisitor)
         {
-            waitingToSpawnVisitor = false;
+            waitingToSpawnVisitor =
+                false;
 
             StartCoroutine(
                 SpawnNextVisitor()
@@ -634,7 +782,7 @@ public class VisitorManager : MonoBehaviour
 
             line =
                 impostorLines[
-                    Random.Range(
+                    UnityEngine.Random.Range(
                         0,
                         impostorLines.Length
                     )
@@ -652,7 +800,7 @@ public class VisitorManager : MonoBehaviour
 
             line =
                 normalLines[
-                    Random.Range(
+                    UnityEngine.Random.Range(
                         0,
                         normalLines.Length
                     )

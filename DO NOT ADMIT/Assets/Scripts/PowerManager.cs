@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class PowerManager : MonoBehaviour
@@ -51,6 +52,14 @@ public class PowerManager : MonoBehaviour
     [SerializeField]
     private GameFlowManager gameFlowManager;
 
+    [Header("Player Dialogue")]
+    [SerializeField]
+    private PlayerDialogueController playerDialogue;
+
+    [Header("Blackout Dialogue")]
+    [SerializeField]
+    private float visitorReactionDelay = 3.5f;
+
     [Header("Flickering Lights")]
     [SerializeField]
     private LightFlicker[] flickeringLights;
@@ -70,25 +79,17 @@ public class PowerManager : MonoBehaviour
 
         powerOn = false;
 
-        Debug.Log("POWER FAILURE");
-
-        // ----------------------------------------------
-        // PAUSE CLOCK
-        // ----------------------------------------------
+        Debug.Log(
+            "POWER FAILURE"
+        );
 
         if (shiftClock != null)
-            shiftClock.PauseClock("Power");
-
-        // ----------------------------------------------
-        // OBJECTIVE
-        // ----------------------------------------------
+            shiftClock.PauseClock(
+                "Power"
+            );
 
         if (gameFlowManager != null)
             gameFlowManager.BlackoutStarted();
-
-        // ----------------------------------------------
-        // LIGHTS
-        // ----------------------------------------------
 
         SetLights(
             restoringLights,
@@ -100,15 +101,9 @@ public class PowerManager : MonoBehaviour
             false
         );
 
-        // ----------------------------------------------
-        // DISPLAYS
-        // ----------------------------------------------
-
-        SetPoweredDisplays(false);
-
-        // ----------------------------------------------
-        // CCTV
-        // ----------------------------------------------
+        SetPoweredDisplays(
+            false
+        );
 
         if (securityCameraSystem != null)
         {
@@ -116,23 +111,11 @@ public class PowerManager : MonoBehaviour
                 .DisableAllCameras();
         }
 
-        // ----------------------------------------------
-        // COMPUTER
-        // ----------------------------------------------
-
         if (computer != null)
             computer.SetPowered(false);
 
-        // ----------------------------------------------
-        // PHONE
-        // ----------------------------------------------
-
         if (phone != null)
             phone.SetPowered(false);
-
-        // ----------------------------------------------
-        // FLASHLIGHT
-        // ----------------------------------------------
 
         if (flashlightPickup != null)
         {
@@ -140,22 +123,44 @@ public class PowerManager : MonoBehaviour
                 .UnlockForBlackout();
         }
 
-        // ----------------------------------------------
-        // VISITORS
-        // ----------------------------------------------
-
         if (visitorManager != null)
         {
             visitorManager
                 .PauseVisitorSpawning();
+        }
 
-            visitorManager
-                .HandleBlackoutVisitor();
+        // PLAYER SPEAKS FIRST.
+        if (playerDialogue != null)
+        {
+            playerDialogue
+                .SayPowerOut();
+        }
+
+        // Then visitor can react afterward.
+        if (visitorManager != null)
+        {
+            StartCoroutine(
+                DelayedVisitorBlackoutReaction()
+            );
         }
 
         Debug.Log(
             "Security controls disabled during blackout."
         );
+    }
+
+    private IEnumerator
+        DelayedVisitorBlackoutReaction()
+    {
+        yield return new WaitForSeconds(
+            visitorReactionDelay
+        );
+
+        if (!powerOn)
+        {
+            visitorManager
+                .HandleBlackoutVisitor();
+        }
     }
 
     // ==================================================
@@ -169,32 +174,24 @@ public class PowerManager : MonoBehaviour
 
         powerOn = true;
 
-        Debug.Log("RESTORING POWER");
-
-        // ----------------------------------------------
-        // LIGHTS
-        // ----------------------------------------------
+        Debug.Log(
+            "RESTORING POWER"
+        );
 
         SetLights(
             restoringLights,
             true
         );
 
-        // These permanently stay dead
+        // Permanently dead.
         SetLights(
             failedLights,
             false
         );
 
-        // ----------------------------------------------
-        // DISPLAYS
-        // ----------------------------------------------
-
-        SetPoweredDisplays(true);
-
-        // ----------------------------------------------
-        // CCTV
-        // ----------------------------------------------
+        SetPoweredDisplays(
+            true
+        );
 
         if (securityCameraSystem != null)
         {
@@ -202,23 +199,11 @@ public class PowerManager : MonoBehaviour
                 .RestoreAfterBlackout();
         }
 
-        // ----------------------------------------------
-        // COMPUTER
-        // ----------------------------------------------
-
         if (computer != null)
             computer.SetPowered(true);
 
-        // ----------------------------------------------
-        // PHONE
-        // ----------------------------------------------
-
         if (phone != null)
             phone.SetPowered(true);
-
-        // ----------------------------------------------
-        // POST-BLACKOUT FLICKERING
-        // ----------------------------------------------
 
         if (flickeringLights != null)
         {
@@ -229,32 +214,31 @@ public class PowerManager : MonoBehaviour
                 if (flicker != null)
                 {
                     flicker
-                        .SetFlickerEnabled(true);
+                        .SetFlickerEnabled(
+                            true
+                        );
                 }
             }
         }
 
-        // ----------------------------------------------
-        // RESUME CLOCK
-        // ----------------------------------------------
-
         if (shiftClock != null)
-            shiftClock.ResumeClock("Power");
-
-        // ----------------------------------------------
-        // OBJECTIVE
-        // ----------------------------------------------
+            shiftClock.ResumeClock(
+                "Power"
+            );
 
         if (gameFlowManager != null)
             gameFlowManager.PowerRestored();
 
+        if (playerDialogue != null)
+        {
+            playerDialogue
+                .SayPartialPower();
+        }
+
         /*
-         * DO NOT resume visitors here.
-         *
-         * Your FlashlightPickup already resumes visitors
-         * after the player returns the flashlight.
-         *
-         * This keeps the blackout sequence controlled.
+         * Visitors still resume from
+         * FlashlightPickup after the flashlight
+         * is returned.
          */
 
         Debug.Log(

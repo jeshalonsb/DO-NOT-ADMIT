@@ -10,8 +10,11 @@ public class TrainingManual : Interactable
     [Header("Manual UI")]
     [SerializeField] private GameObject manualCanvas;
 
-    [Header("Manual Object")]
+    [Header("Physical Manual")]
     [SerializeField] private GameObject manualModel;
+
+    [Header("Interaction Prompt")]
+    [SerializeField] private GameObject manualPrompt;
 
     [Header("Player")]
     [SerializeField] private PlayerMovement playerMovement;
@@ -19,96 +22,136 @@ public class TrainingManual : Interactable
 
     private bool manualOpen;
     private bool canCloseManual;
-    private bool hasBeenRead;
+    private bool hasBeenReadOnce;
+    private bool playerLooking;
 
     protected override void Start()
     {
-        base.Start();
+        // Don't use the normal Interactable prompt system
+        // for this object.
 
         if (manualCanvas != null)
             manualCanvas.SetActive(false);
+
+        if (manualPrompt != null)
+            manualPrompt.SetActive(false);
     }
 
     private void Update()
     {
-        if (!manualOpen || !canCloseManual)
-            return;
-
         if (Keyboard.current == null)
             return;
 
-        if (Keyboard.current.eKey.wasPressedThisFrame)
+        // ----------------------------
+        // MANUAL IS OPEN
+        // ----------------------------
+
+        if (manualOpen)
         {
-            CloseManual();
+            if (canCloseManual &&
+                Keyboard.current.eKey.wasPressedThisFrame)
+            {
+                CloseManual();
+            }
+
+            return;
         }
+
+        // ----------------------------
+        // MANUAL IS ON DESK
+        // ----------------------------
+
+        UpdatePrompt();
     }
 
-    public override void ShowPrompt()
+    // ==================================================
+    // PLAYER LOOKING
+    // ==================================================
+
+    public void SetPlayerLooking(bool looking)
     {
-        if (hasBeenRead || manualOpen)
-        {
-            HidePrompt();
-            return;
-        }
+        playerLooking = looking;
 
-        if (gameFlowManager != null &&
-            gameFlowManager.ShiftStarted)
-        {
-            HidePrompt();
-            return;
-        }
-
-        base.ShowPrompt();
+        UpdatePrompt();
     }
+
+    private void UpdatePrompt()
+    {
+        if (manualPrompt == null)
+            return;
+
+        if (manualOpen)
+        {
+            manualPrompt.SetActive(false);
+            return;
+        }
+
+        manualPrompt.SetActive(playerLooking);
+    }
+
+    // ==================================================
+    // INTERACT
+    // ==================================================
 
     public override void Interact()
     {
-        if (manualOpen || hasBeenRead)
-            return;
-
-        if (gameFlowManager == null)
+        if (manualOpen)
             return;
 
         OpenManual();
     }
+
+    // ==================================================
+    // OPEN MANUAL
+    // ==================================================
 
     private void OpenManual()
     {
         manualOpen = true;
         canCloseManual = false;
 
-        HidePrompt();
+        if (manualPrompt != null)
+            manualPrompt.SetActive(false);
 
+        // Hide ONLY the physical book.
         if (manualModel != null)
             manualModel.SetActive(false);
 
+        // Show fullscreen/manual UI.
         if (manualCanvas != null)
             manualCanvas.SetActive(true);
 
+        // Stop player movement while reading.
         if (playerMovement != null)
             playerMovement.enabled = false;
 
         if (playerLook != null)
             playerLook.enabled = false;
 
-        Debug.Log("Manual opened.");
+        StartCoroutine(WaitForERelease());
 
-        StartCoroutine(EnableClosingNextFrame());
+        Debug.Log("Manual opened.");
     }
 
-    private IEnumerator EnableClosingNextFrame()
+    private IEnumerator WaitForERelease()
     {
-        // Wait until the E press that opened the manual is over.
-        yield return null;
+        while (Keyboard.current != null &&
+               Keyboard.current.eKey.isPressed)
+        {
+            yield return null;
+        }
 
         canCloseManual = true;
     }
+
+    // ==================================================
+    // CLOSE MANUAL
+    // ==================================================
 
     private void CloseManual()
     {
         manualOpen = false;
         canCloseManual = false;
-        hasBeenRead = true;
 
         if (manualCanvas != null)
             manualCanvas.SetActive(false);
@@ -122,11 +165,33 @@ public class TrainingManual : Interactable
         if (playerLook != null)
             playerLook.enabled = true;
 
-        if (gameFlowManager != null)
-            gameFlowManager.ReadManual();
+        // Only first reading advances opening objective.
+        if (!hasBeenReadOnce)
+        {
+            hasBeenReadOnce = true;
 
-        HidePrompt();
+            if (gameFlowManager != null)
+                gameFlowManager.ReadManual();
 
-        Debug.Log("Manual read. Clock-in unlocked.");
+            Debug.Log("Manual read. Clock-in unlocked.");
+        }
+
+        // Don't automatically show prompt here.
+        // PlayerInteraction will handle it when looking.
+        UpdatePrompt();
+    }
+
+    // ==================================================
+    // IGNORE NORMAL PROMPT SYSTEM
+    // ==================================================
+
+    public override void ShowPrompt()
+    {
+        // Intentionally empty.
+    }
+
+    public override void HidePrompt()
+    {
+        // Intentionally empty.
     }
 }

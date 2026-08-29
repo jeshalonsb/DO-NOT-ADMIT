@@ -8,7 +8,8 @@ public class EndingController : MonoBehaviour
     {
         None,
         Good,
-        Bad
+        ImpostorBad,
+        Fired
     }
 
     [Header("Main References")]
@@ -26,14 +27,16 @@ public class EndingController : MonoBehaviour
     [SerializeField] private PlayerLook playerLook;
     [SerializeField] private PlayerFlashlight playerFlashlight;
 
+    [Header("Player Dialogue")]
+    [SerializeField] private PlayerDialogueController playerDialogue;
+
     // ==================================================
-    // GOOD ENDING
+    // SUPERVISOR
     // ==================================================
 
-    [Header("GOOD ENDING - Supervisor")]
+    [Header("Supervisor")]
     [SerializeField] private GameObject supervisor;
     [SerializeField] private Transform supervisorLookTarget;
-
     [SerializeField] private GameObject[] supervisorScareTriggers;
 
     [Range(0f, 1f)]
@@ -42,37 +45,37 @@ public class EndingController : MonoBehaviour
     [SerializeField] private float supervisorSpawnDistance = 2f;
     [SerializeField] private float supervisorYOffset = 0f;
 
-    [Header("GOOD ENDING - Camera")]
+    [Header("Supervisor Camera")]
     [SerializeField] private float goodCameraTurnDuration = 0.35f;
     [SerializeField] private float goodScarePause = 0.5f;
 
-    [Header("GOOD ENDING - Dialogue")]
+    [Header("Dialogue")]
     [SerializeField] private VisitorDialogueUI dialogueUI;
     [SerializeField] private float dialogueLineTime = 3.5f;
 
     // ==================================================
-    // BAD ENDING
+    // IMPOSTOR BAD ENDING
     // ==================================================
 
-    [Header("BAD ENDING - Trigger")]
+    [Header("Bad Ending Trigger")]
     [SerializeField] private GameObject badEndingTrigger;
 
-    [Header("BAD ENDING - Impostor")]
+    [Header("Impostor")]
     [SerializeField] private GameObject impostor;
     [SerializeField] private Transform impostorLookTarget;
     [SerializeField] private Transform impostorSpawnPoint;
 
-    [Header("BAD ENDING - Jumpscare")]
+    [Header("Jumpscare")]
     [SerializeField] private float badCameraTurnDuration = 0.18f;
     [SerializeField] private float lungeDuration = 0.3f;
     [SerializeField] private float lungeStopDistance = 0.45f;
 
-    [Header("BAD ENDING - Fall")]
+    [Header("Fall")]
     [SerializeField] private float fallDuration = 0.55f;
     [SerializeField] private float fallDistance = 1.1f;
     [SerializeField] private float fallRoll = 75f;
 
-    [Header("BAD ENDING - Audio")]
+    [Header("Bad Ending Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip jumpscareSound;
 
@@ -92,7 +95,9 @@ public class EndingController : MonoBehaviour
     private EndingType endingType =
         EndingType.None;
 
+    private bool shiftEndRequested;
     private bool shiftEnded;
+
     private bool supervisorScareUsed;
     private bool badJumpscareUsed;
     private bool gameEnded;
@@ -108,6 +113,12 @@ public class EndingController : MonoBehaviour
             shiftClock.OnHourChanged +=
                 HandleHourChanged;
         }
+
+        if (visitorManager != null)
+        {
+            visitorManager.OnShiftReadyToFinish +=
+                FinalizeEndOfShift;
+        }
     }
 
     private void OnDisable()
@@ -116,6 +127,12 @@ public class EndingController : MonoBehaviour
         {
             shiftClock.OnHourChanged -=
                 HandleHourChanged;
+        }
+
+        if (visitorManager != null)
+        {
+            visitorManager.OnShiftReadyToFinish -=
+                FinalizeEndOfShift;
         }
     }
 
@@ -127,7 +144,9 @@ public class EndingController : MonoBehaviour
         if (impostor != null)
             impostor.SetActive(false);
 
-        SetAllGoodScareTriggers(false);
+        SetAllGoodScareTriggers(
+            false
+        );
 
         if (badEndingTrigger != null)
             badEndingTrigger.SetActive(false);
@@ -136,7 +155,10 @@ public class EndingController : MonoBehaviour
             fadePanel.alpha = 0f;
 
         if (endingText != null)
-            endingText.gameObject.SetActive(false);
+        {
+            endingText.gameObject
+                .SetActive(false);
+        }
     }
 
     // ==================================================
@@ -152,17 +174,49 @@ public class EndingController : MonoBehaviour
 
     private void StartEndOfShift()
     {
+        if (shiftEndRequested)
+            return;
+
+        shiftEndRequested = true;
+
+        bool canEndNow = true;
+
+        if (visitorManager != null)
+        {
+            canEndNow =
+                visitorManager.CloseShift();
+        }
+
+        if (!canEndNow)
+        {
+            if (objectiveText != null)
+            {
+                objectiveText.text =
+                    "FINAL CLEARED VISITOR - COMPLETE ENTRY";
+            }
+
+            Debug.Log(
+                "6 AM reached, but cleared visitor must finish entering first."
+            );
+
+            return;
+        }
+
+        FinalizeEndOfShift();
+    }
+
+    private void FinalizeEndOfShift()
+    {
         if (shiftEnded)
             return;
 
         shiftEnded = true;
 
         if (gameFlowManager != null)
-            gameFlowManager.CompleteShift();
-
-        // Completely close visitor processing
-        if (visitorManager != null)
-            visitorManager.CloseShift();
+        {
+            gameFlowManager
+                .CompleteShift();
+        }
 
         if (objectiveText != null)
         {
@@ -179,14 +233,35 @@ public class EndingController : MonoBehaviour
             return;
         }
 
-        if (shiftManager.HasFailedShift())
+        // ----------------------------------------------
+        // PRIORITY 1:
+        // IMPOSTOR WAS ADMITTED
+        // ----------------------------------------------
+
+        if (shiftManager.HasLetImpostorIn())
         {
-            PrepareBadEnding();
+            PrepareImpostorEnding();
+            return;
         }
-        else
+
+        // ----------------------------------------------
+        // PRIORITY 2:
+        // VALID EMPLOYEE DENIED
+        // ----------------------------------------------
+
+        if (
+            shiftManager
+                .HasDeniedValidEmployee())
         {
-            PrepareGoodEnding();
+            PrepareFiredEnding();
+            return;
         }
+
+        // ----------------------------------------------
+        // PERFECT / SAFE SHIFT
+        // ----------------------------------------------
+
+        PrepareGoodEnding();
     }
 
     // ==================================================
@@ -218,6 +293,31 @@ public class EndingController : MonoBehaviour
             return;
         }
 
+        EnableRandomSupervisorTrigger();
+    }
+
+    // ==================================================
+    // FIRED ENDING
+    // ==================================================
+
+    private void PrepareFiredEnding()
+    {
+        endingType =
+            EndingType.Fired;
+
+        Debug.LogWarning(
+            "FIRED ENDING - VALID EMPLOYEE DENIED"
+        );
+
+        if (badEndingTrigger != null)
+            badEndingTrigger.SetActive(false);
+
+        // Fired ending ALWAYS gets supervisor.
+        EnableRandomSupervisorTrigger();
+    }
+
+    private void EnableRandomSupervisorTrigger()
+    {
         if (
             supervisorScareTriggers == null ||
             supervisorScareTriggers.Length == 0)
@@ -251,7 +351,7 @@ public class EndingController : MonoBehaviour
         }
 
         Debug.Log(
-            "Supervisor scare point selected: " +
+            "Supervisor trigger selected: " +
             chosenIndex
         );
     }
@@ -259,8 +359,8 @@ public class EndingController : MonoBehaviour
     public void TriggerSupervisorScare()
     {
         if (
-            endingType !=
-            EndingType.Good)
+            endingType != EndingType.Good &&
+            endingType != EndingType.Fired)
             return;
 
         if (supervisorScareUsed)
@@ -271,7 +371,9 @@ public class EndingController : MonoBehaviour
 
         supervisorScareUsed = true;
 
-        SetAllGoodScareTriggers(false);
+        SetAllGoodScareTriggers(
+            false
+        );
 
         StartCoroutine(
             SupervisorScareRoutine()
@@ -298,10 +400,74 @@ public class EndingController : MonoBehaviour
             );
         }
 
-        yield return
-            new WaitForSeconds(
-                goodScarePause
+        yield return new WaitForSeconds(
+            goodScarePause
+        );
+
+        // ==================================================
+        // FIRED
+        // ==================================================
+
+        if (endingType == EndingType.Fired)
+        {
+            if (dialogueUI != null)
+            {
+                dialogueUI.ShowDialogue(
+                    "SUPERVISOR",
+                    "Hey. We need to talk."
+                );
+            }
+
+            yield return new WaitForSeconds(
+                dialogueLineTime
             );
+
+            if (dialogueUI != null)
+            {
+                dialogueUI.ShowDialogue(
+                    "SUPERVISOR",
+                    "You denied authorized personnel tonight."
+                );
+            }
+
+            yield return new WaitForSeconds(
+                dialogueLineTime
+            );
+
+            if (dialogueUI != null)
+            {
+                dialogueUI.ShowDialogue(
+                    "SUPERVISOR",
+                    "You're fired."
+                );
+            }
+
+            yield return new WaitForSeconds(
+                dialogueLineTime
+            );
+
+            yield return StartCoroutine(
+                FadeToBlack()
+            );
+
+            gameEnded = true;
+
+            ShowEndingScreen(
+                "SHIFT FAILED",
+                "YOU HAVE BEEN TERMINATED."
+            );
+
+            Cursor.lockState =
+                CursorLockMode.None;
+
+            Cursor.visible = true;
+
+            yield break;
+        }
+
+        // ==================================================
+        // GOOD
+        // ==================================================
 
         if (dialogueUI != null)
         {
@@ -395,23 +561,27 @@ public class EndingController : MonoBehaviour
                 );
         }
 
-        supervisor.SetActive(true);
+        supervisor.SetActive(
+            true
+        );
     }
 
     // ==================================================
-    // BAD ENDING
+    // IMPOSTOR ENDING
     // ==================================================
 
-    private void PrepareBadEnding()
+    private void PrepareImpostorEnding()
     {
         endingType =
-            EndingType.Bad;
+            EndingType.ImpostorBad;
 
         Debug.Log(
-            "BAD ENDING ARMED - RETURN TO CAR"
+            "IMPOSTOR ENDING ARMED - RETURN TO CAR"
         );
 
-        SetAllGoodScareTriggers(false);
+        SetAllGoodScareTriggers(
+            false
+        );
 
         if (badEndingTrigger != null)
             badEndingTrigger.SetActive(true);
@@ -421,7 +591,7 @@ public class EndingController : MonoBehaviour
     {
         if (
             endingType !=
-            EndingType.Bad)
+            EndingType.ImpostorBad)
             return;
 
         if (badJumpscareUsed)
@@ -457,7 +627,9 @@ public class EndingController : MonoBehaviour
                     impostorSpawnPoint.rotation;
             }
 
-            impostor.SetActive(true);
+            impostor.SetActive(
+                true
+            );
         }
 
         if (
@@ -469,6 +641,13 @@ public class EndingController : MonoBehaviour
                     badCameraTurnDuration
                 )
             );
+        }
+
+        // PLAYER SCREAM
+        if (playerDialogue != null)
+        {
+            playerDialogue
+                .SayJumpscare();
         }
 
         if (
@@ -489,7 +668,9 @@ public class EndingController : MonoBehaviour
         );
 
         yield return
-            new WaitForSeconds(0.35f);
+            new WaitForSeconds(
+                0.35f
+            );
 
         yield return StartCoroutine(
             FadeToBlack()
@@ -497,14 +678,10 @@ public class EndingController : MonoBehaviour
 
         gameEnded = true;
 
-        if (endingText != null)
-        {
-            endingText.text =
-                "SHIFT FAILED";
-
-            endingText.gameObject
-                .SetActive(true);
-        }
+        ShowEndingScreen(
+            "SHIFT FAILED",
+            "AN IMPOSTOR ENTERED THE FACILITY."
+        );
 
         Cursor.lockState =
             CursorLockMode.None;
@@ -512,7 +689,7 @@ public class EndingController : MonoBehaviour
         Cursor.visible = true;
 
         Debug.Log(
-            "BAD ENDING COMPLETE"
+            "IMPOSTOR ENDING COMPLETE"
         );
     }
 
@@ -541,7 +718,8 @@ public class EndingController : MonoBehaviour
         while (
             timer < lungeDuration)
         {
-            timer += Time.deltaTime;
+            timer +=
+                Time.deltaTime;
 
             float progress =
                 Mathf.Clamp01(
@@ -600,7 +778,8 @@ public class EndingController : MonoBehaviour
         while (
             timer < fallDuration)
         {
-            timer += Time.deltaTime;
+            timer +=
+                Time.deltaTime;
 
             float progress =
                 Mathf.Clamp01(
@@ -660,7 +839,9 @@ public class EndingController : MonoBehaviour
     {
         gameEnded = true;
 
-        SetAllGoodScareTriggers(false);
+        SetAllGoodScareTriggers(
+            false
+        );
 
         LockPlayerControls();
 
@@ -668,14 +849,10 @@ public class EndingController : MonoBehaviour
             FadeToBlack()
         );
 
-        if (endingText != null)
-        {
-            endingText.text =
-                "SHIFT COMPLETE";
-
-            endingText.gameObject
-                .SetActive(true);
-        }
+        ShowEndingScreen(
+            "SHIFT COMPLETE",
+            "SHIFT PASSED."
+        );
 
         Cursor.lockState =
             CursorLockMode.None;
@@ -685,6 +862,54 @@ public class EndingController : MonoBehaviour
         Debug.Log(
             "GOOD ENDING COMPLETE"
         );
+    }
+
+    // ==================================================
+    // END SCREEN
+    // ==================================================
+
+    private void ShowEndingScreen(
+        string title,
+        string result)
+    {
+        if (endingText == null)
+            return;
+
+        int impostors =
+            shiftManager != null
+                ? shiftManager.ImpostorsLetIn
+                : 0;
+
+        int employeesIn =
+            shiftManager != null
+                ? shiftManager.EmployeesLetIn
+                : 0;
+
+        int employeesDenied =
+            shiftManager != null
+                ? shiftManager.EmployeesDenied
+                : 0;
+
+        endingText.text =
+            title +
+            "\n\n" +
+
+            "IMPOSTORS LET IN: " +
+            impostors +
+            "\n" +
+
+            "EMPLOYEES LET IN: " +
+            employeesIn +
+            "\n" +
+
+            "EMPLOYEES DENIED: " +
+            employeesDenied +
+            "\n\n" +
+
+            result;
+
+        endingText.gameObject
+            .SetActive(true);
     }
 
     // ==================================================
@@ -718,7 +943,8 @@ public class EndingController : MonoBehaviour
         while (
             timer < duration)
         {
-            timer += Time.deltaTime;
+            timer +=
+                Time.deltaTime;
 
             float progress =
                 Mathf.Clamp01(
@@ -754,25 +980,31 @@ public class EndingController : MonoBehaviour
     private void LockPlayerControls()
     {
         if (playerMovement != null)
-            playerMovement.enabled = false;
+            playerMovement.enabled =
+                false;
 
         if (playerLook != null)
-            playerLook.enabled = false;
+            playerLook.enabled =
+                false;
 
         if (playerFlashlight != null)
-            playerFlashlight.enabled = false;
+            playerFlashlight.enabled =
+                false;
     }
 
     private void UnlockPlayerControls()
     {
         if (playerMovement != null)
-            playerMovement.enabled = true;
+            playerMovement.enabled =
+                true;
 
         if (playerLook != null)
-            playerLook.enabled = true;
+            playerLook.enabled =
+                true;
 
         if (playerFlashlight != null)
-            playerFlashlight.enabled = true;
+            playerFlashlight.enabled =
+                true;
     }
 
     // ==================================================
@@ -792,7 +1024,8 @@ public class EndingController : MonoBehaviour
         while (
             timer < fadeDuration)
         {
-            timer += Time.deltaTime;
+            timer +=
+                Time.deltaTime;
 
             fadePanel.alpha =
                 Mathf.Lerp(
@@ -825,7 +1058,9 @@ public class EndingController : MonoBehaviour
             in supervisorScareTriggers)
         {
             if (trigger != null)
-                trigger.SetActive(state);
+                trigger.SetActive(
+                    state
+                );
         }
     }
 
@@ -835,10 +1070,8 @@ public class EndingController : MonoBehaviour
 
     public void TestGoodEnding()
     {
+        shiftEndRequested = true;
         shiftEnded = true;
-
-        if (visitorManager != null)
-            visitorManager.CloseShift();
 
         if (objectiveText != null)
         {
@@ -851,10 +1084,8 @@ public class EndingController : MonoBehaviour
 
     public void TestBadEnding()
     {
+        shiftEndRequested = true;
         shiftEnded = true;
-
-        if (visitorManager != null)
-            visitorManager.CloseShift();
 
         if (objectiveText != null)
         {
@@ -862,6 +1093,20 @@ public class EndingController : MonoBehaviour
                 "SHIFT COMPLETE - RETURN TO YOUR CAR";
         }
 
-        PrepareBadEnding();
+        PrepareImpostorEnding();
+    }
+
+    public void TestFiredEnding()
+    {
+        shiftEndRequested = true;
+        shiftEnded = true;
+
+        if (objectiveText != null)
+        {
+            objectiveText.text =
+                "SHIFT COMPLETE - RETURN TO YOUR CAR";
+        }
+
+        PrepareFiredEnding();
     }
 }

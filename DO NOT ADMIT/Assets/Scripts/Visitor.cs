@@ -18,8 +18,7 @@ public class Visitor : MonoBehaviour
 
     private VisitorData visitorData;
 
-    public VisitorData Data =>
-        visitorData;
+    public VisitorData Data => visitorData;
 
     public bool IsImpostor
     {
@@ -62,6 +61,28 @@ public class Visitor : MonoBehaviour
         get;
         private set;
     }
+
+    // ==================================================
+    // STATE INFO FOR VISITOR MANAGER
+    // ==================================================
+
+    public bool IsUndecided =>
+        currentState == VisitorState.MovingToInspection ||
+        currentState == VisitorState.WaitingForDecision;
+
+    public bool IsLeavingDenied =>
+        currentState == VisitorState.LeavingDenied;
+
+    public bool IsPendingFacilityEntry =>
+        currentState == VisitorState.MovingToDoor ||
+        currentState == VisitorState.WaitingAtDoor ||
+        currentState == VisitorState.EnteringFacility;
+
+    public bool IsWaitingAtFacilityDoor =>
+        currentState == VisitorState.WaitingAtDoor;
+
+    public bool IsEnteringFacility =>
+        currentState == VisitorState.EnteringFacility;
 
     private Transform inspectionPoint;
     private Transform doorWaitPoint;
@@ -428,7 +449,7 @@ public class Visitor : MonoBehaviour
                 if (visitorManager != null)
                 {
                     visitorManager
-                        .VisitorFinished();
+                        .VisitorFinished(this);
                 }
 
                 Destroy(gameObject);
@@ -445,7 +466,7 @@ public class Visitor : MonoBehaviour
                 if (visitorManager != null)
                 {
                     visitorManager
-                        .VisitorFinished();
+                        .VisitorFinished(this);
                 }
 
                 Destroy(gameObject);

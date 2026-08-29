@@ -3,12 +3,13 @@ using UnityEngine.InputSystem;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    [Header("Interaction Settings")]
     [SerializeField] private float interactionDistance = 3f;
     [SerializeField] private LayerMask interactionLayer;
 
     private Interactable currentInteractable;
+
     private BreakerBox currentBreaker;
+    private TrainingManual currentManual;
 
     private void Update()
     {
@@ -17,7 +18,6 @@ public class PlayerInteraction : MonoBehaviour
         if (Keyboard.current == null)
             return;
 
-        // Normal interactables use a single E press
         if (Keyboard.current.eKey.wasPressedThisFrame &&
             currentInteractable != null &&
             currentBreaker == null)
@@ -28,7 +28,10 @@ public class PlayerInteraction : MonoBehaviour
 
     private void CheckForInteractable()
     {
-        Ray ray = new Ray(transform.position, transform.forward);
+        Ray ray = new Ray(
+            transform.position,
+            transform.forward
+        );
 
         if (Physics.Raycast(
             ray,
@@ -37,35 +40,78 @@ public class PlayerInteraction : MonoBehaviour
             interactionLayer))
         {
             Interactable newInteractable =
-                hit.collider.GetComponent<Interactable>();
+                hit.collider.GetComponentInParent<Interactable>();
 
             BreakerBox newBreaker =
-                hit.collider.GetComponent<BreakerBox>();
+                hit.collider.GetComponentInParent<BreakerBox>();
+
+            TrainingManual newManual =
+                hit.collider.GetComponentInParent<TrainingManual>();
 
             if (newInteractable != null)
             {
-                // Switched to a different interactable
+                // --------------------------------------
+                // CHANGED INTERACTABLE
+                // --------------------------------------
+
                 if (newInteractable != currentInteractable)
                 {
-                    if (currentInteractable != null)
-                        currentInteractable.HidePrompt();
+                    ClearCurrentInteractable();
 
-                    // Stop breaker hold if we looked away from old breaker
-                    if (currentBreaker != null)
+                    currentInteractable =
+                        newInteractable;
+
+                    // Normal interactables
+                    if (newManual == null)
                     {
-                        currentBreaker.SetPlayerLooking(false);
-                        currentBreaker = null;
+                        currentInteractable.ShowPrompt();
                     }
+                }
 
-                    currentInteractable = newInteractable;
-                    currentInteractable.ShowPrompt();
+                // --------------------------------------
+                // BREAKER
+                // --------------------------------------
 
-                    // Check if this interactable is the breaker
-                    if (newBreaker != null)
+                if (newBreaker != null)
+                {
+                    if (currentBreaker != newBreaker)
                     {
-                        currentBreaker = newBreaker;
+                        if (currentBreaker != null)
+                            currentBreaker.SetPlayerLooking(false);
+
+                        currentBreaker =
+                            newBreaker;
+
                         currentBreaker.SetPlayerLooking(true);
                     }
+                }
+                else if (currentBreaker != null)
+                {
+                    currentBreaker.SetPlayerLooking(false);
+                    currentBreaker = null;
+                }
+
+                // --------------------------------------
+                // MANUAL
+                // --------------------------------------
+
+                if (newManual != null)
+                {
+                    if (currentManual != newManual)
+                    {
+                        if (currentManual != null)
+                            currentManual.SetPlayerLooking(false);
+
+                        currentManual =
+                            newManual;
+                    }
+
+                    currentManual.SetPlayerLooking(true);
+                }
+                else if (currentManual != null)
+                {
+                    currentManual.SetPlayerLooking(false);
+                    currentManual = null;
                 }
 
                 return;
@@ -87,6 +133,12 @@ public class PlayerInteraction : MonoBehaviour
         {
             currentBreaker.SetPlayerLooking(false);
             currentBreaker = null;
+        }
+
+        if (currentManual != null)
+        {
+            currentManual.SetPlayerLooking(false);
+            currentManual = null;
         }
     }
 }
