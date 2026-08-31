@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc0c54928d5a4a042bc484bf55a0cc74, type: 3}
+  m_Name: Daniel Foster
+  m_EditorClassIdentifier: Assembly-CSharp::VisitorData
+  visitorName: Daniel Foster
+  employeeID: 1738
+  department: Research
+  clearanceLevel: B
+  employeeStatus: ACTIVE
+  visitorPrefab: {fileID: 8195518891641572759, guid: dbfd98085f95ee74394a3f786fff0769, type: 3}
+  idPortrait: {fileID: 21300000, guid: 4d423181d88d1ba43a57781c463d9881, type: 3}
+  arrivalDialogue: Research. Got a work order inside.
+  clearDialogue: "Thanks.\t"
+  denyDialogue: Seriously? I'm supposed to be working tonight.

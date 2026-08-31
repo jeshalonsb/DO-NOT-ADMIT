@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc0c54928d5a4a042bc484bf55a0cc74, type: 3}
+  m_Name: LaurenMitchell
+  m_EditorClassIdentifier: Assembly-CSharp::VisitorData
+  visitorName: LAUREN MITCHELL
+  employeeID: 8894
+  department: Administration
+  clearanceLevel: C
+  employeeStatus: ACTIVE
+  visitorPrefab: {fileID: 5534163122770013234, guid: ae2cf89be5b12f143b623eb1ce821810, type: 3}
+  idPortrait: {fileID: 21300000, guid: 5c084454b05fe934992718fec9e8a46e, type: 3}
+  arrivalDialogue: Administration. Evening.
+  clearDialogue: Have a good night.
+  denyDialogue: I wasn't notified of any restriction.

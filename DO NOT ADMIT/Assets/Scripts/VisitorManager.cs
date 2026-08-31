@@ -5,12 +5,21 @@ using UnityEngine;
 
 public class VisitorManager : MonoBehaviour
 {
-    [Header("Visitor")]
-    [SerializeField] private GameObject visitorPrefab;
+    [Header("Visitors")]
     [SerializeField] private VisitorData[] visitors;
 
+    [System.Serializable]
+    public class VisitorSpawnAssignment
+    {
+        public VisitorData visitor;
+        public Transform spawnPoint;
+    }
+
+    [Header("Visitor Spawn Assignments")]
+    [SerializeField] private VisitorSpawnAssignment[] visitorSpawnAssignments;
+
     [Header("Visitor Points")]
-    [SerializeField] private Transform spawnPoint;
+    [SerializeField] private Transform defaultSpawnPoint;
     [SerializeField] private Transform inspectionPoint;
     [SerializeField] private Transform doorWaitPoint;
     [SerializeField] private Transform entryExitPoint;
@@ -71,6 +80,10 @@ public class VisitorManager : MonoBehaviour
 
         currentVisitorIndex = 0;
 
+        // Randomize who arrives first, second, third, etc.
+        ShuffleVisitors();
+
+        // Choose impostors AFTER shuffling.
         GenerateImpostors();
 
         Debug.Log("VISITOR SHIFT STARTED");
@@ -273,7 +286,51 @@ public class VisitorManager : MonoBehaviour
     // ==================================================
     // SPAWNING
     // ==================================================
+    private Transform GetSpawnPointForVisitor(VisitorData visitorData)
+    {
+        if (visitorSpawnAssignments != null)
+        {
+            foreach (VisitorSpawnAssignment assignment in visitorSpawnAssignments)
+            {
+                if (assignment != null &&
+                    assignment.visitor == visitorData &&
+                    assignment.spawnPoint != null)
+                {
+                    return assignment.spawnPoint;
+                }
+            }
+        }
 
+        Debug.LogWarning(
+            "No car spawn assigned for " +
+            visitorData.visitorName +
+            ". Using default spawn point."
+        );
+
+        return defaultSpawnPoint;
+    }
+    private void ShuffleVisitors()
+    {
+        for (int i = 0; i < visitors.Length; i++)
+        {
+            int randomIndex =
+                UnityEngine.Random.Range(
+                    i,
+                    visitors.Length
+                );
+
+            VisitorData temp =
+                visitors[i];
+
+            visitors[i] =
+                visitors[randomIndex];
+
+            visitors[randomIndex] =
+                temp;
+        }
+
+        Debug.Log("Visitor order randomized.");
+    }
     private void SpawnVisitor()
     {
         if (!shiftStarted)
@@ -297,10 +354,8 @@ public class VisitorManager : MonoBehaviour
             return;
         }
 
-        if (visitorPrefab == null ||
-            visitors == null ||
-            visitors.Length == 0 ||
-            spawnPoint == null)
+        if (visitors == null ||
+            visitors.Length == 0)
         {
             Debug.LogWarning(
                 "VisitorManager is missing visitor setup."
@@ -317,16 +372,76 @@ public class VisitorManager : MonoBehaviour
         VisitorData visitorData =
             visitors[currentVisitorIndex];
 
+        // Make sure VisitorData exists.
+        if (visitorData == null)
+        {
+            Debug.LogWarning(
+                "VisitorData at index " +
+                currentVisitorIndex +
+                " is missing."
+            );
+
+            currentVisitorIndex++;
+
+            StartCoroutine(
+                SpawnNextVisitor()
+            );
+
+            return;
+        }
+
+        // Get this employee's specific prefab.
+        GameObject prefabToSpawn =
+            visitorData.visitorPrefab;
+
+        if (prefabToSpawn == null)
+        {
+            Debug.LogWarning(
+                "No Visitor Prefab assigned to " +
+                visitorData.visitorName +
+                "."
+            );
+
+            currentVisitorIndex++;
+
+            StartCoroutine(
+                SpawnNextVisitor()
+            );
+
+            return;
+        }
+
         bool isImpostor =
             impostorIndices.Contains(
                 currentVisitorIndex
             );
 
+        // Spawn THIS employee's prefab.
+        Transform visitorSpawnPoint =
+            GetSpawnPointForVisitor(visitorData);
+
+        if (visitorSpawnPoint == null)
+        {
+            Debug.LogWarning(
+                "No spawn point available for " +
+                visitorData.visitorName +
+                "."
+            );
+
+            currentVisitorIndex++;
+
+            StartCoroutine(
+                SpawnNextVisitor()
+            );
+
+            return;
+        }
+
         GameObject visitorObject =
             Instantiate(
-                visitorPrefab,
-                spawnPoint.position,
-                spawnPoint.rotation
+                prefabToSpawn,
+                visitorSpawnPoint.position,
+                visitorSpawnPoint.rotation
             );
 
         Visitor visitor =
@@ -335,21 +450,32 @@ public class VisitorManager : MonoBehaviour
         if (visitor == null)
         {
             Debug.LogWarning(
-                "Visitor prefab has no Visitor component."
+                visitorData.visitorName +
+                "'s prefab has no Visitor component."
             );
 
             Destroy(visitorObject);
+
+            currentVisitorIndex++;
+
+            StartCoroutine(
+                SpawnNextVisitor()
+            );
+
             return;
         }
 
+        // Give the spawned prefab its employee information.
         visitor.SetVisitorData(
             visitorData
         );
 
+        // Decide whether this occurrence is an impostor.
         visitor.SetImpostor(
             isImpostor
         );
 
+        // Set all movement locations.
         visitor.Setup(
             inspectionPoint,
             doorWaitPoint,
@@ -364,7 +490,9 @@ public class VisitorManager : MonoBehaviour
 
         Debug.Log(
             "Spawned visitor: " +
-            visitorData.visitorName
+            visitorData.visitorName +
+            " | Prefab: " +
+            prefabToSpawn.name
         );
     }
 
@@ -598,7 +726,7 @@ public class VisitorManager : MonoBehaviour
             visitor;
 
         Debug.Log(
-            "Visitor waiting for facility door unlock."
+            "Visitor waiting at facility door unlock."
         );
     }
 

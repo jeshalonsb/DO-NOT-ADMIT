@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc0c54928d5a4a042bc484bf55a0cc74, type: 3}
+  m_Name: Isaac Romero
+  m_EditorClassIdentifier: Assembly-CSharp::VisitorData
+  visitorName: ISAAC ROMERO
+  employeeID: 3562
+  department: Research
+  clearanceLevel: A
+  employeeStatus: ACTIVE
+  visitorPrefab: {fileID: 3377452593666773594, guid: 6a8dbef3ea06767408634203b72d1485, type: 3}
+  idPortrait: {fileID: 21300000, guid: aba190d0e5dd1b64ba9be1ee9de57d30, type: 3}
+  arrivalDialogue: Research
+  clearDialogue: Appreciate it.
+  denyDialogue: Something must be wrong with the system.

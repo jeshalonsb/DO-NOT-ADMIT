@@ -6,7 +6,10 @@ public enum CorrectDecision
     Deny
 }
 
-[CreateAssetMenu(fileName = "New Visitor", menuName = "Do Not Admit/Visitor Data")]
+[CreateAssetMenu(
+    fileName = "New Visitor",
+    menuName = "Do Not Admit/Visitor Data"
+)]
 public class VisitorData : ScriptableObject
 {
     [Header("Identity")]
@@ -17,6 +20,12 @@ public class VisitorData : ScriptableObject
 
     [Header("Status")]
     public string employeeStatus = "ACTIVE";
+
+    [Header("Visitor Prefab")]
+    public GameObject visitorPrefab;
+
+    [Header("ID Portrait")]
+    public Sprite idPortrait;
 
     [Header("Dialogue")]
     [TextArea(2, 4)]

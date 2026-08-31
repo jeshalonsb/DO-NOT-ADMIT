@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class IDCard : MonoBehaviour
 {
@@ -9,6 +10,9 @@ public class IDCard : MonoBehaviour
     [SerializeField] private TMP_Text departmentText;
     [SerializeField] private TMP_Text clearanceText;
     [SerializeField] private TMP_Text statusText;
+
+    [Header("Portrait")]
+    [SerializeField] private Image portraitImage;
 
     public void DisplayVisitor(Visitor visitor)
     {
@@ -31,6 +35,20 @@ public class IDCard : MonoBehaviour
         statusText.text =
             "STATUS: " +
             visitor.DisplayStatus;
+
+        // ------------------------------------------
+        // PORTRAIT
+        // ------------------------------------------
+
+        if (portraitImage != null &&
+            visitor.Data != null)
+        {
+            portraitImage.sprite =
+                visitor.Data.idPortrait;
+
+            portraitImage.enabled =
+                visitor.Data.idPortrait != null;
+        }
 
         gameObject.SetActive(true);
 

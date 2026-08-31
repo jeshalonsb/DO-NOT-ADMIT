@@ -17,7 +17,8 @@ MonoBehaviour:
   department: Engineering
   clearanceLevel: B
   employeeStatus: ACTIVE
-  correctDecision: 0
+  visitorPrefab: {fileID: 6449932472722444745, guid: c2b75b2be52e75948abe32555351fd48, type: 3}
+  idPortrait: {fileID: 21300000, guid: 0cbced52c76345649a51bd5fc1dec511, type: 3}
   arrivalDialogue: Engineering
   clearDialogue: thanks man
   denyDialogue: What? This is bullshit. I was already cleared by the main gate

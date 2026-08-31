@@ -14,10 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VisitorData
   visitorName: Emily Vasquez
   employeeID: 6621
-  department: Engineering
+  department: Maitenance
   clearanceLevel: A
   employeeStatus: ACTIVE
-  correctDecision: 0
-  arrivalDialogue: Good Evening. Engineering Department
+  visitorPrefab: {fileID: 8635585570161341728, guid: 0007c96add558c041ba1abac29aa1a64, type: 3}
+  idPortrait: {fileID: 21300000, guid: 1636ad86babf22844bc4170fb7e3e6e9, type: 3}
+  arrivalDialogue: Evening, Maitenance call.
   clearDialogue: '*sigh* Here we go again'
   denyDialogue: Whatever. I didnt wanna be here anyway

@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EmployeeRecord
   employeeName: Emily Vasquez
   employeeID: 6621
-  department: 'Engineering '
+  department: Maitenance
   clearanceLevel: A
   employeeStatus: ACTIVE

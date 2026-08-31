@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc0c54928d5a4a042bc484bf55a0cc74, type: 3}
+  m_Name: Michael Benson
+  m_EditorClassIdentifier: Assembly-CSharp::VisitorData
+  visitorName: Michael Benson
+  employeeID: 9481
+  department: Security
+  clearanceLevel: A
+  employeeStatus: ACTIVE
+  visitorPrefab: {fileID: 8906774307150979834, guid: 93883c1d8b7f6134c8972716cbab5b79, type: 3}
+  idPortrait: {fileID: 21300000, guid: 9e63b8490aec7fd489897aa9dce1c16a, type: 3}
+  arrivalDialogue: "Interior Security detail.\t"
+  clearDialogue: "Stay alert tonight.\t"
+  denyDialogue: That's not right. Check it again.

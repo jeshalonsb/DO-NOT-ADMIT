@@ -17,7 +17,8 @@ MonoBehaviour:
   department: Maitenance
   clearanceLevel: C
   employeeStatus: ACTIVE
-  correctDecision: 1
+  visitorPrefab: {fileID: 2939367395394533046, guid: 87cb9f6591c39cc41ba8ac8d0ed25cff, type: 3}
+  idPortrait: {fileID: 21300000, guid: ee572512866a39f4ca0dfbb694c694d4, type: 3}
   arrivalDialogue: 'Maintenance. Got called in for some bullshit. '
   clearDialogue: Finally gosh, theyre waiting for me.
   denyDialogue: 'Are you serious? What a waste of time. '

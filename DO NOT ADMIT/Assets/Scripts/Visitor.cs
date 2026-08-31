@@ -16,6 +16,17 @@ public class Visitor : MonoBehaviour
     [SerializeField] private float moveSpeed = 2f;
     [SerializeField] private float rotationSpeed = 8f;
 
+    [Header("Character Visual")]
+    [SerializeField] private Transform visualRoot;
+
+    [Header("Animation")]
+    [SerializeField] private Animator animator;
+
+    private static readonly int IsWalkingHash =
+        Animator.StringToHash("IsWalking");
+
+    private GameObject spawnedCharacter;
+
     private VisitorData visitorData;
 
     public VisitorData Data => visitorData;
@@ -63,7 +74,7 @@ public class Visitor : MonoBehaviour
     }
 
     // ==================================================
-    // STATE INFO FOR VISITOR MANAGER
+    // STATE INFO
     // ==================================================
 
     public bool IsUndecided =>
@@ -94,6 +105,69 @@ public class Visitor : MonoBehaviour
     private Vector3 targetPosition;
 
     private VisitorState currentState;
+
+    // ==================================================
+    // CHARACTER MODEL
+    // ==================================================
+
+    public void SetCharacterModel(
+        GameObject characterPrefab)
+    {
+        if (characterPrefab == null)
+        {
+            Debug.LogWarning(
+                "No character prefab assigned for visitor."
+            );
+
+            return;
+        }
+
+        if (visualRoot == null)
+        {
+            Debug.LogWarning(
+                "Visitor Visual Root is not assigned."
+            );
+
+            return;
+        }
+
+        if (spawnedCharacter != null)
+        {
+            Destroy(spawnedCharacter);
+        }
+
+        spawnedCharacter =
+            Instantiate(
+                characterPrefab,
+                visualRoot
+            );
+
+        spawnedCharacter.transform.localPosition =
+            Vector3.zero;
+
+        spawnedCharacter.transform.localRotation =
+            Quaternion.identity;
+
+        spawnedCharacter.transform.localScale =
+            Vector3.one;
+
+        animator =
+            spawnedCharacter
+                .GetComponentInChildren<Animator>();
+
+        if (animator == null)
+        {
+            Debug.LogWarning(
+                "Spawned visitor model has no Animator."
+            );
+        }
+        else
+        {
+            animator.applyRootMotion = false;
+
+            UpdateAnimation();
+        }
+    }
 
     // ==================================================
     // DATA
@@ -207,8 +281,7 @@ public class Visitor : MonoBehaviour
             visitorData.employeeID,
             out int originalID))
         {
-            int fakeID =
-                originalID;
+            int fakeID = originalID;
 
             while (fakeID == originalID)
             {
@@ -220,9 +293,7 @@ public class Visitor : MonoBehaviour
             return fakeID.ToString();
         }
 
-        return
-            visitorData.employeeID +
-            "9";
+        return visitorData.employeeID + "9";
     }
 
     private string GetWrongDepartment()
@@ -295,23 +366,16 @@ public class Visitor : MonoBehaviour
         Transform denyExit,
         VisitorManager manager)
     {
-        inspectionPoint =
-            inspection;
+        inspectionPoint = inspection;
+        doorWaitPoint = doorWait;
+        entryExitPoint = entryExit;
+        denyExitPoint = denyExit;
 
-        doorWaitPoint =
-            doorWait;
+        visitorManager = manager;
 
-        entryExitPoint =
-            entryExit;
-
-        denyExitPoint =
-            denyExit;
-
-        visitorManager =
-            manager;
-
-        currentState =
-            VisitorState.MovingToInspection;
+        SetState(
+            VisitorState.MovingToInspection
+        );
 
         targetPosition =
             inspectionPoint.position;
@@ -333,16 +397,52 @@ public class Visitor : MonoBehaviour
     {
         return
             currentState ==
-            VisitorState.MovingToInspection ||
+                VisitorState.MovingToInspection ||
 
             currentState ==
-            VisitorState.MovingToDoor ||
+                VisitorState.MovingToDoor ||
 
             currentState ==
-            VisitorState.LeavingDenied ||
+                VisitorState.LeavingDenied ||
 
             currentState ==
-            VisitorState.EnteringFacility;
+                VisitorState.EnteringFacility;
+    }
+
+    // ==================================================
+    // STATE / ANIMATION
+    // ==================================================
+
+    private void SetState(
+        VisitorState newState)
+    {
+        currentState = newState;
+
+        UpdateAnimation();
+    }
+
+    private void UpdateAnimation()
+    {
+        if (animator == null)
+            return;
+
+        bool shouldWalk =
+            currentState ==
+                VisitorState.MovingToInspection ||
+
+            currentState ==
+                VisitorState.MovingToDoor ||
+
+            currentState ==
+                VisitorState.LeavingDenied ||
+
+            currentState ==
+                VisitorState.EnteringFacility;
+
+        animator.SetBool(
+            IsWalkingHash,
+            shouldWalk
+        );
     }
 
     // ==================================================
@@ -401,12 +501,14 @@ public class Visitor : MonoBehaviour
     {
         switch (currentState)
         {
-            case VisitorState
-                .MovingToInspection:
+            case VisitorState.MovingToInspection:
 
-                currentState =
-                    VisitorState
-                        .WaitingForDecision;
+                // Face the security booth/window
+                transform.rotation = inspectionPoint.rotation;
+
+                SetState(
+                    VisitorState.WaitingForDecision
+                );
 
                 Debug.Log(
                     "Visitor waiting for inspection."
@@ -414,18 +516,16 @@ public class Visitor : MonoBehaviour
 
                 if (visitorManager != null)
                 {
-                    visitorManager
-                        .VisitorReady(this);
+                    visitorManager.VisitorReady(this);
                 }
 
                 break;
 
-            case VisitorState
-                .MovingToDoor:
+            case VisitorState.MovingToDoor:
 
-                currentState =
-                    VisitorState
-                        .WaitingAtDoor;
+                SetState(
+                    VisitorState.WaitingAtDoor
+                );
 
                 Debug.Log(
                     "Visitor waiting at facility entrance."
@@ -439,8 +539,7 @@ public class Visitor : MonoBehaviour
 
                 break;
 
-            case VisitorState
-                .LeavingDenied:
+            case VisitorState.LeavingDenied:
 
                 Debug.Log(
                     "Visitor has left."
@@ -456,8 +555,7 @@ public class Visitor : MonoBehaviour
 
                 break;
 
-            case VisitorState
-                .EnteringFacility:
+            case VisitorState.EnteringFacility:
 
                 Debug.Log(
                     "Visitor entered facility."
@@ -490,8 +588,9 @@ public class Visitor : MonoBehaviour
             "Visitor cleared."
         );
 
-        currentState =
-            VisitorState.MovingToDoor;
+        SetState(
+            VisitorState.MovingToDoor
+        );
 
         targetPosition =
             doorWaitPoint.position;
@@ -508,8 +607,9 @@ public class Visitor : MonoBehaviour
             "Visitor denied."
         );
 
-        currentState =
-            VisitorState.LeavingDenied;
+        SetState(
+            VisitorState.LeavingDenied
+        );
 
         targetPosition =
             denyExitPoint.position;
@@ -528,8 +628,9 @@ public class Visitor : MonoBehaviour
             return;
         }
 
-        currentState =
-            VisitorState.EnteringFacility;
+        SetState(
+            VisitorState.EnteringFacility
+        );
 
         targetPosition =
             entryExitPoint.position;
@@ -555,8 +656,9 @@ public class Visitor : MonoBehaviour
             return;
         }
 
-        currentState =
-            VisitorState.LeavingDenied;
+        SetState(
+            VisitorState.LeavingDenied
+        );
 
         targetPosition =
             denyExitPoint.position;

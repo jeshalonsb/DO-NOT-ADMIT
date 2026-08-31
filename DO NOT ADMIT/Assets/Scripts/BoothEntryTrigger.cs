@@ -8,7 +8,7 @@ public class BoothEntryTrigger : MonoBehaviour
 
     [Header("Booth Door")]
     [SerializeField]
-    private SwingDoor boothDoor;
+    private SlidingDoor boothDoor;
 
     private void OnTriggerEnter(
         Collider other)

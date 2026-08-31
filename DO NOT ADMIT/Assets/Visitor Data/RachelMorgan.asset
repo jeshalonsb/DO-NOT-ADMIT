@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc0c54928d5a4a042bc484bf55a0cc74, type: 3}
+  m_Name: RachelMorgan
+  m_EditorClassIdentifier: Assembly-CSharp::VisitorData
+  visitorName: Rachel Morgan
+  employeeID: 6045
+  department: Research
+  clearanceLevel: A
+  employeeStatus: ACTIVE
+  visitorPrefab: {fileID: 4398171101123445284, guid: 9c76f447ec036e94e858302b2627a3f9, type: 3}
+  idPortrait: {fileID: 21300000, guid: 30f8ed2e883517c4fb43124bcbf6591f, type: 3}
+  arrivalDialogue: Evening. Research department.
+  clearDialogue: Thank you.
+  denyDialogue: My access should still be active.
