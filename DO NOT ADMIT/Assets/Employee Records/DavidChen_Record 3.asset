@@ -16,4 +16,4 @@ MonoBehaviour:
   employeeID: 2054
   department: Maitenance
   clearanceLevel: C
-  employeeStatus: TERMINATED
+  employeeStatus: ACTIVE

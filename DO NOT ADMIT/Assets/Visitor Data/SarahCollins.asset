@@ -18,7 +18,7 @@ MonoBehaviour:
   clearanceLevel: A
   employeeStatus: ACTIVE
   visitorPrefab: {fileID: 5766776177423090700, guid: 5734edf16467ddc4aa6836c803a47f53, type: 3}
-  idPortrait: {fileID: 21300000, guid: 5a7e89066be498949b1ef76e97c1a5c4, type: 3}
+  idPortrait: {fileID: 21300000, guid: 7cf444b8993f51f46acd170ced3d2cf1, type: 3}
   arrivalDialogue: "Here and ready to work!\t"
   clearDialogue: "thank you so much. Have a good night \t\t"
   denyDialogue: What how? I work here I swear!

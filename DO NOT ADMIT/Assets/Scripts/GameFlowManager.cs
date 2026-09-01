@@ -12,11 +12,15 @@ public class GameFlowManager : MonoBehaviour
     [Header("Game Systems")]
     [SerializeField] private ShiftClock shiftClock;
     [SerializeField] private VisitorManager visitorManager;
+    [SerializeField] private PlayerDialogueController playerDialogue;
+    [SerializeField] private SlidingDoor boothDoor;
 
     [Header("Objective")]
     [SerializeField] private TMP_Text objectiveText;
 
     private bool playerReachedBooth;
+    private bool boothApproachDialoguePlayed;
+
     private bool manualRead;
     private bool shiftStarted;
 
@@ -30,40 +34,34 @@ public class GameFlowManager : MonoBehaviour
     public bool BlackoutActive => blackoutActive;
     public bool ShiftComplete => shiftComplete;
 
-    /*
-     * Used by Interactable.
-     *
-     * During blackout, ordinary interaction prompts
-     * are hidden unless that object specifically
-     * allows blackout interaction.
-     */
     public bool SuppressNormalInteractionPrompts =>
         blackoutActive;
 
-    /*
-     * Booth door rules:
-     *
-     * 1. Usable at the beginning before entering booth.
-     * 2. Usable during blackout.
-     * 3. Usable while returning after breaker reset.
-     * 4. Usable after shift completes.
-     */
     public bool CanUseBoothDoor
     {
         get
         {
-            if (!playerReachedBooth)
+            // Before clocking in, the player can freely
+            // enter and leave the booth.
+            if (!shiftStarted)
                 return true;
 
+            // During blackout, the player must be able
+            // to leave the booth.
             if (blackoutActive)
                 return true;
 
+            // After restoring the breaker, allow the
+            // player to get back inside.
             if (waitingForBoothReturn)
                 return true;
 
+            // After 6 AM, permanently allow the player out.
             if (shiftComplete)
                 return true;
 
+            // During the active normal shift,
+            // keep the booth door locked.
             return false;
         }
     }
@@ -116,14 +114,36 @@ public class GameFlowManager : MonoBehaviour
     }
 
     // ==================================================
+    // BOOTH APPROACH
+    // ==================================================
+
+    public void PlayerApproachedBooth()
+    {
+        if (boothApproachDialoguePlayed)
+            return;
+
+        if (playerReachedBooth)
+            return;
+
+        boothApproachDialoguePlayed = true;
+
+        if (playerDialogue != null)
+        {
+            playerDialogue.SayBoothApproach();
+        }
+
+        Debug.Log(
+            "Player noticed security booth."
+        );
+    }
+
+    // ==================================================
     // BOOTH
     // ==================================================
 
     public void PlayerEnteredBooth()
     {
-        /*
-         * Returning from blackout.
-         */
+        // Returning from blackout.
         if (waitingForBoothReturn)
         {
             waitingForBoothReturn = false;
@@ -140,13 +160,16 @@ public class GameFlowManager : MonoBehaviour
             return;
         }
 
-        /*
-         * First time entering booth.
-         */
+        // First time entering booth.
         if (!shiftStarted &&
-            !playerReachedBooth)
+    !playerReachedBooth)
         {
             playerReachedBooth = true;
+
+            if (playerDialogue != null)
+            {
+                playerDialogue.SayBoothApproach();
+            }
 
             SetObjective(
                 "READ THE FIRST DAY MANUAL"
@@ -204,6 +227,18 @@ public class GameFlowManager : MonoBehaviour
 
         shiftStarted = true;
 
+        // Lock player inside the booth.
+        if (boothDoor != null)
+        {
+            boothDoor.LockDoor();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "GameFlowManager has no Booth Door assigned!"
+            );
+        }
+
         SetObjective(
             "SHIFT STARTED"
         );
@@ -230,6 +265,11 @@ public class GameFlowManager : MonoBehaviour
 
         blackoutActive = true;
 
+        if (boothDoor != null)
+        {
+            boothDoor.UnlockDoor();
+        }
+
         SetObjective(
             "POWER FAILURE - RESET BREAKER\nHINT: SECURITY PARKING"
         );
@@ -244,10 +284,6 @@ public class GameFlowManager : MonoBehaviour
         if (!shiftStarted)
             return;
 
-        /*
-         * Keep blackout interaction restrictions
-         * active until player gets back inside.
-         */
         waitingForBoothReturn = true;
 
         SetObjective(
@@ -272,6 +308,17 @@ public class GameFlowManager : MonoBehaviour
 
         blackoutActive = false;
         waitingForBoothReturn = false;
+
+        if (playerDialogue != null)
+        {
+            playerDialogue.SayShiftOver();
+        }
+
+        // Permanently unlock and open the booth door.
+        if (boothDoor != null)
+        {
+            boothDoor.UnlockForShiftEnd();
+        }
 
         SetObjective(
             "SHIFT COMPLETE - RETURN TO YOUR CAR"

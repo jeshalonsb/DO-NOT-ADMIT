@@ -27,6 +27,21 @@ public class PlayerDialogueController : MonoBehaviour
         );
     }
 
+    // ==================================================
+    // GUIDANCE
+    // ==================================================
+
+    public void SayBoothApproach()
+    {
+        Say(
+            "That must be the booth."
+        );
+    }
+
+    // ==================================================
+    // POWER
+    // ==================================================
+
     public void SayPowerOut()
     {
         Say(
@@ -41,12 +56,31 @@ public class PlayerDialogueController : MonoBehaviour
         );
     }
 
+    // ==================================================
+    // SHIFT END
+    // ==================================================
+
+    public void SayShiftOver()
+    {
+        Say(
+            "Finally. Shift's over. None of this is my problem anymore."
+        );
+    }
+
+    // ==================================================
+    // JUMPSCARE
+    // ==================================================
+
     public void SayJumpscare()
     {
         Say(
             "AHH!"
         );
     }
+
+    // ==================================================
+    // GENERIC
+    // ==================================================
 
     public void Say(
         string line)

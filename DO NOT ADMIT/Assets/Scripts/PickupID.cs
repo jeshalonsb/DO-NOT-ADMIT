@@ -9,32 +9,61 @@ public class PickupID : Interactable
     [Header("Hold Position")]
     [SerializeField]
     private Vector3 holdPosition =
-        new Vector3(0.3f, -0.2f, 0.55f);
+        new Vector3(0.18f, -0.18f, 0.45f);
 
     [SerializeField]
     private Vector3 holdRotation =
         new Vector3(10f, 0f, 0f);
 
     [Header("Movement")]
-    [SerializeField] private float moveSpeed = 8f;
-    [SerializeField] private float rotateSpeed = 10f;
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private float rotateSpeed = 12f;
 
     private Transform originalParent;
-    private Vector3 originalPosition;
-    private Quaternion originalRotation;
+    private Vector3 originalLocalPosition;
+    private Quaternion originalLocalRotation;
+
+    private bool deskPositionCached;
 
     private bool isHeld;
     private bool isMoving;
 
     private Coroutine moveCoroutine;
 
+    public bool IsHeld => isHeld;
+
+    private void Awake()
+    {
+        CacheDeskPosition();
+    }
+
     protected override void Start()
     {
         base.Start();
 
-        originalParent = transform.parent;
-        originalPosition = transform.position;
-        originalRotation = transform.rotation;
+        CacheDeskPosition();
+    }
+
+    private void CacheDeskPosition()
+    {
+        if (deskPositionCached)
+            return;
+
+        originalParent =
+            transform.parent;
+
+        originalLocalPosition =
+            transform.localPosition;
+
+        originalLocalRotation =
+            transform.localRotation;
+
+        deskPositionCached = true;
+
+        Debug.Log(
+            "ID desk position cached: " +
+            transform.position
+        );
     }
 
     public override void Interact()
@@ -43,17 +72,15 @@ public class PickupID : Interactable
             return;
 
         if (isHeld)
-        {
             PutDown();
-        }
         else
-        {
             PickUp();
-        }
     }
 
     private void PickUp()
     {
+        CacheDeskPosition();
+
         if (playerCamera == null)
         {
             Debug.LogWarning(
@@ -73,91 +100,74 @@ public class PickupID : Interactable
             true
         );
 
-        Vector3 targetPosition =
-            playerCamera.TransformPoint(
-                holdPosition
-            );
-
-        Quaternion targetRotation =
-            playerCamera.rotation *
-            Quaternion.Euler(
-                holdRotation
-            );
-
-        StartMove(
-            targetPosition,
-            targetRotation,
-            false
-        );
-    }
-
-    private void PutDown()
-    {
-        isHeld = false;
-
-        HidePrompt();
-
-        transform.SetParent(
-            null,
-            true
-        );
-
-        StartMove(
-            originalPosition,
-            originalRotation,
-            true
-        );
-    }
-
-    private void StartMove(
-        Vector3 targetPosition,
-        Quaternion targetRotation,
-        bool restoreParent)
-    {
         if (moveCoroutine != null)
         {
-            StopCoroutine(
-                moveCoroutine
-            );
+            StopCoroutine(moveCoroutine);
         }
 
         moveCoroutine =
             StartCoroutine(
-                MoveID(
-                    targetPosition,
-                    targetRotation,
-                    restoreParent
-                )
+                MoveToHeldPosition()
             );
     }
 
-    private IEnumerator MoveID(
-        Vector3 targetPosition,
-        Quaternion targetRotation,
-        bool restoreParent)
+    public void PutDown()
+    {
+        CacheDeskPosition();
+
+        if (!isHeld && !isMoving)
+            return;
+
+        isHeld = false;
+
+        HidePrompt();
+
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+            moveCoroutine = null;
+        }
+
+        transform.SetParent(
+            originalParent,
+            true
+        );
+
+        moveCoroutine =
+            StartCoroutine(
+                MoveToDesk()
+            );
+    }
+
+    private IEnumerator MoveToHeldPosition()
     {
         isMoving = true;
 
+        Quaternion targetRotation =
+            Quaternion.Euler(
+                holdRotation
+            );
+
         while (
             Vector3.Distance(
-                transform.position,
-                targetPosition
-            ) > 0.005f ||
+                transform.localPosition,
+                holdPosition
+            ) > 0.002f ||
             Quaternion.Angle(
-                transform.rotation,
+                transform.localRotation,
                 targetRotation
-            ) > 0.5f)
+            ) > 0.25f)
         {
-            transform.position =
+            transform.localPosition =
                 Vector3.Lerp(
-                    transform.position,
-                    targetPosition,
+                    transform.localPosition,
+                    holdPosition,
                     moveSpeed * Time.deltaTime
                 );
 
-            transform.rotation =
+            transform.localRotation =
                 Quaternion.Slerp(
-                    transform.rotation,
+                    transform.localRotation,
                     targetRotation,
                     rotateSpeed * Time.deltaTime
                 );
@@ -165,21 +175,85 @@ public class PickupID : Interactable
             yield return null;
         }
 
-        transform.position =
-            targetPosition;
+        transform.localPosition =
+            holdPosition;
 
-        transform.rotation =
+        transform.localRotation =
             targetRotation;
-
-        if (restoreParent)
-        {
-            transform.SetParent(
-                originalParent,
-                true
-            );
-        }
 
         isMoving = false;
         moveCoroutine = null;
+    }
+
+    private IEnumerator MoveToDesk()
+    {
+        isMoving = true;
+
+        while (
+            Vector3.Distance(
+                transform.localPosition,
+                originalLocalPosition
+            ) > 0.002f ||
+            Quaternion.Angle(
+                transform.localRotation,
+                originalLocalRotation
+            ) > 0.25f)
+        {
+            transform.localPosition =
+                Vector3.Lerp(
+                    transform.localPosition,
+                    originalLocalPosition,
+                    moveSpeed * Time.deltaTime
+                );
+
+            transform.localRotation =
+                Quaternion.Slerp(
+                    transform.localRotation,
+                    originalLocalRotation,
+                    rotateSpeed * Time.deltaTime
+                );
+
+            yield return null;
+        }
+
+        transform.localPosition =
+            originalLocalPosition;
+
+        transform.localRotation =
+            originalLocalRotation;
+
+        isMoving = false;
+        moveCoroutine = null;
+    }
+
+    public void ResetToDeskImmediate()
+    {
+        /*
+         * This is important because DisplayVisitor()
+         * can call this before Start().
+         */
+        CacheDeskPosition();
+
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+            moveCoroutine = null;
+        }
+
+        isHeld = false;
+        isMoving = false;
+
+        HidePrompt();
+
+        transform.SetParent(
+            originalParent,
+            false
+        );
+
+        transform.localPosition =
+            originalLocalPosition;
+
+        transform.localRotation =
+            originalLocalRotation;
     }
 }

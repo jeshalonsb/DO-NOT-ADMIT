@@ -11,6 +11,8 @@ public class PlayerInteraction : MonoBehaviour
     private BreakerBox currentBreaker;
     private TrainingManual currentManual;
 
+    private PickupID heldID;
+
     private void Update()
     {
         CheckForInteractable();
@@ -18,11 +20,60 @@ public class PlayerInteraction : MonoBehaviour
         if (Keyboard.current == null)
             return;
 
-        if (Keyboard.current.eKey.wasPressedThisFrame &&
-            currentInteractable != null &&
-            currentBreaker == null)
+        if (!Keyboard.current.eKey.wasPressedThisFrame)
+            return;
+
+        // --------------------------------------
+        // BREAKER
+        // --------------------------------------
+
+        if (currentBreaker != null)
+            return;
+
+        // --------------------------------------
+        // HOLDING ID
+        // --------------------------------------
+
+        if (heldID != null)
         {
+            /*
+             * If we're looking at another interactable
+             * while holding the ID, interact with it
+             * instead of putting the ID down.
+             */
+            if (currentInteractable != null &&
+                currentInteractable != heldID)
+            {
+                currentInteractable.Interact();
+                return;
+            }
+
+            /*
+             * Otherwise E puts the ID back down.
+             */
+            heldID.PutDown();
+            heldID = null;
+
+            return;
+        }
+
+        // --------------------------------------
+        // NORMAL INTERACTION
+        // --------------------------------------
+
+        if (currentInteractable != null)
+        {
+            PickupID pickupID =
+                currentInteractable
+                    .GetComponent<PickupID>();
+
             currentInteractable.Interact();
+
+            if (pickupID != null &&
+                pickupID.IsHeld)
+            {
+                heldID = pickupID;
+            }
         }
     }
 
@@ -40,13 +91,16 @@ public class PlayerInteraction : MonoBehaviour
             interactionLayer))
         {
             Interactable newInteractable =
-                hit.collider.GetComponentInParent<Interactable>();
+                hit.collider
+                    .GetComponentInParent<Interactable>();
 
             BreakerBox newBreaker =
-                hit.collider.GetComponentInParent<BreakerBox>();
+                hit.collider
+                    .GetComponentInParent<BreakerBox>();
 
             TrainingManual newManual =
-                hit.collider.GetComponentInParent<TrainingManual>();
+                hit.collider
+                    .GetComponentInParent<TrainingManual>();
 
             if (newInteractable != null)
             {
@@ -54,17 +108,18 @@ public class PlayerInteraction : MonoBehaviour
                 // CHANGED INTERACTABLE
                 // --------------------------------------
 
-                if (newInteractable != currentInteractable)
+                if (newInteractable !=
+                    currentInteractable)
                 {
                     ClearCurrentInteractable();
 
                     currentInteractable =
                         newInteractable;
 
-                    // Normal interactables
                     if (newManual == null)
                     {
-                        currentInteractable.ShowPrompt();
+                        currentInteractable
+                            .ShowPrompt();
                     }
                 }
 
@@ -74,20 +129,27 @@ public class PlayerInteraction : MonoBehaviour
 
                 if (newBreaker != null)
                 {
-                    if (currentBreaker != newBreaker)
+                    if (currentBreaker !=
+                        newBreaker)
                     {
                         if (currentBreaker != null)
-                            currentBreaker.SetPlayerLooking(false);
+                        {
+                            currentBreaker
+                                .SetPlayerLooking(false);
+                        }
 
                         currentBreaker =
                             newBreaker;
 
-                        currentBreaker.SetPlayerLooking(true);
+                        currentBreaker
+                            .SetPlayerLooking(true);
                     }
                 }
                 else if (currentBreaker != null)
                 {
-                    currentBreaker.SetPlayerLooking(false);
+                    currentBreaker
+                        .SetPlayerLooking(false);
+
                     currentBreaker = null;
                 }
 
@@ -97,20 +159,27 @@ public class PlayerInteraction : MonoBehaviour
 
                 if (newManual != null)
                 {
-                    if (currentManual != newManual)
+                    if (currentManual !=
+                        newManual)
                     {
                         if (currentManual != null)
-                            currentManual.SetPlayerLooking(false);
+                        {
+                            currentManual
+                                .SetPlayerLooking(false);
+                        }
 
                         currentManual =
                             newManual;
                     }
 
-                    currentManual.SetPlayerLooking(true);
+                    currentManual
+                        .SetPlayerLooking(true);
                 }
                 else if (currentManual != null)
                 {
-                    currentManual.SetPlayerLooking(false);
+                    currentManual
+                        .SetPlayerLooking(false);
+
                     currentManual = null;
                 }
 
@@ -131,13 +200,17 @@ public class PlayerInteraction : MonoBehaviour
 
         if (currentBreaker != null)
         {
-            currentBreaker.SetPlayerLooking(false);
+            currentBreaker
+                .SetPlayerLooking(false);
+
             currentBreaker = null;
         }
 
         if (currentManual != null)
         {
-            currentManual.SetPlayerLooking(false);
+            currentManual
+                .SetPlayerLooking(false);
+
             currentManual = null;
         }
     }

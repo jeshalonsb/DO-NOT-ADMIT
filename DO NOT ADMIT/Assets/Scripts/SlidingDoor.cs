@@ -7,7 +7,10 @@ public class SlidingDoor : Interactable
     [SerializeField] private Transform doorPanel;
 
     [Header("Sliding")]
-    [SerializeField] private Vector3 openOffset = new Vector3(1.5f, 0f, 0f);
+    [SerializeField]
+    private Vector3 openOffset =
+        new Vector3(1.5f, 0f, 0f);
+
     [SerializeField] private float slideSpeed = 4f;
 
     [Header("Automatic Closing")]
@@ -19,16 +22,32 @@ public class SlidingDoor : Interactable
     private bool doorOpen;
     private bool moving;
 
+    // Starts unlocked so the player can enter the booth
+    // before clocking in.
+    private bool doorLocked;
+
     private void Awake()
     {
         if (doorPanel == null)
+        {
             doorPanel = transform;
+        }
 
-        closedPosition = doorPanel.localPosition;
+        closedPosition =
+            doorPanel.localPosition;
 
         openPosition =
-            closedPosition +
-            openOffset;
+            closedPosition + openOffset;
+    }
+
+    private void Update()
+    {
+        // If the door becomes locked while the player
+        // is already looking at it, hide the prompt.
+        if (doorLocked)
+        {
+            HidePrompt();
+        }
     }
 
     // ==================================================
@@ -37,8 +56,7 @@ public class SlidingDoor : Interactable
 
     public override void ShowPrompt()
     {
-        if (GameFlowManager.Instance != null &&
-            !GameFlowManager.Instance.CanUseBoothDoor)
+        if (doorLocked)
         {
             HidePrompt();
             return;
@@ -53,11 +71,12 @@ public class SlidingDoor : Interactable
 
     public override void Interact()
     {
-        if (GameFlowManager.Instance != null &&
-            !GameFlowManager.Instance.CanUseBoothDoor)
+        if (doorLocked)
         {
+            HidePrompt();
+
             Debug.Log(
-                "Booth door is currently locked."
+                "BOOTH DOOR LOCKED"
             );
 
             return;
@@ -77,6 +96,79 @@ public class SlidingDoor : Interactable
                     : closedPosition
             )
         );
+    }
+
+    // ==================================================
+    // LOCK DOOR
+    // ==================================================
+
+    public void LockDoor()
+    {
+        doorLocked = true;
+
+        HidePrompt();
+
+        Debug.Log(
+            "BOOTH DOOR HAS BEEN LOCKED"
+        );
+
+        // If the door is open when the shift starts,
+        // close it automatically.
+        if (doorOpen)
+        {
+            doorOpen = false;
+
+            StopAllCoroutines();
+
+            StartCoroutine(
+                SlideDoor(
+                    closedPosition
+                )
+            );
+        }
+    }
+
+    // ==================================================
+    // UNLOCK DOOR
+    // ==================================================
+
+    public void UnlockDoor()
+    {
+        doorLocked = false;
+
+        Debug.Log(
+            "BOOTH DOOR HAS BEEN UNLOCKED"
+        );
+    }
+
+    // ==================================================
+    // SHIFT END
+    // ==================================================
+
+    public void UnlockForShiftEnd()
+    {
+        doorLocked = false;
+
+        HidePrompt();
+
+        Debug.Log(
+            "BOOTH DOOR UNLOCKED FOR SHIFT END"
+        );
+
+        // Automatically open the door at the end
+        // of the shift so the player can leave.
+        if (!doorOpen)
+        {
+            doorOpen = true;
+
+            StopAllCoroutines();
+
+            StartCoroutine(
+                SlideDoor(
+                    openPosition
+                )
+            );
+        }
     }
 
     // ==================================================

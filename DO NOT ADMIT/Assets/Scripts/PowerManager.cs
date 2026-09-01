@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class PowerManager : MonoBehaviour
 {
@@ -64,9 +65,30 @@ public class PowerManager : MonoBehaviour
     [SerializeField]
     private LightFlicker[] flickeringLights;
 
+    [Header("Blackout Visuals")]
+    [SerializeField]
+    private Volume blackoutVolume;
+
+    [SerializeField]
+    private float blackoutFadeSpeed = 1.5f;
+
     private bool powerOn = true;
 
+    private Coroutine blackoutVolumeCoroutine;
+
     public bool PowerOn => powerOn;
+
+    // ==================================================
+    // START
+    // ==================================================
+
+    private void Start()
+    {
+        if (blackoutVolume != null)
+        {
+            blackoutVolume.weight = 0f;
+        }
+    }
 
     // ==================================================
     // BLACKOUT
@@ -84,12 +106,16 @@ public class PowerManager : MonoBehaviour
         );
 
         if (shiftClock != null)
+        {
             shiftClock.PauseClock(
                 "Power"
             );
+        }
 
         if (gameFlowManager != null)
+        {
             gameFlowManager.BlackoutStarted();
+        }
 
         SetLights(
             restoringLights,
@@ -112,10 +138,14 @@ public class PowerManager : MonoBehaviour
         }
 
         if (computer != null)
+        {
             computer.SetPowered(false);
+        }
 
         if (phone != null)
+        {
             phone.SetPowered(false);
+        }
 
         if (flashlightPickup != null)
         {
@@ -129,14 +159,19 @@ public class PowerManager : MonoBehaviour
                 .PauseVisitorSpawning();
         }
 
-        // PLAYER SPEAKS FIRST.
+        // Darken the entire scene.
+        FadeBlackoutVolume(
+            1f
+        );
+
+        // Player speaks first.
         if (playerDialogue != null)
         {
             playerDialogue
                 .SayPowerOut();
         }
 
-        // Then visitor can react afterward.
+        // Visitor reacts afterward.
         if (visitorManager != null)
         {
             StartCoroutine(
@@ -149,14 +184,14 @@ public class PowerManager : MonoBehaviour
         );
     }
 
-    private IEnumerator
-        DelayedVisitorBlackoutReaction()
+    private IEnumerator DelayedVisitorBlackoutReaction()
     {
         yield return new WaitForSeconds(
             visitorReactionDelay
         );
 
-        if (!powerOn)
+        if (!powerOn &&
+            visitorManager != null)
         {
             visitorManager
                 .HandleBlackoutVisitor();
@@ -200,10 +235,14 @@ public class PowerManager : MonoBehaviour
         }
 
         if (computer != null)
+        {
             computer.SetPowered(true);
+        }
 
         if (phone != null)
+        {
             phone.SetPowered(true);
+        }
 
         if (flickeringLights != null)
         {
@@ -222,18 +261,27 @@ public class PowerManager : MonoBehaviour
         }
 
         if (shiftClock != null)
+        {
             shiftClock.ResumeClock(
                 "Power"
             );
+        }
 
         if (gameFlowManager != null)
+        {
             gameFlowManager.PowerRestored();
+        }
 
         if (playerDialogue != null)
         {
             playerDialogue
                 .SayPartialPower();
         }
+
+        // Return scene exposure to normal.
+        FadeBlackoutVolume(
+            0f
+        );
 
         /*
          * Visitors still resume from
@@ -244,6 +292,57 @@ public class PowerManager : MonoBehaviour
         Debug.Log(
             "POWER RESTORED - PARTIAL SYSTEM FAILURE"
         );
+    }
+
+    // ==================================================
+    // BLACKOUT VOLUME
+    // ==================================================
+
+    private void FadeBlackoutVolume(
+        float targetWeight)
+    {
+        if (blackoutVolume == null)
+            return;
+
+        if (blackoutVolumeCoroutine != null)
+        {
+            StopCoroutine(
+                blackoutVolumeCoroutine
+            );
+        }
+
+        blackoutVolumeCoroutine =
+            StartCoroutine(
+                FadeBlackoutVolumeRoutine(
+                    targetWeight
+                )
+            );
+    }
+
+    private IEnumerator FadeBlackoutVolumeRoutine(
+        float targetWeight)
+    {
+        while (
+            Mathf.Abs(
+                blackoutVolume.weight -
+                targetWeight
+            ) > 0.01f)
+        {
+            blackoutVolume.weight =
+                Mathf.MoveTowards(
+                    blackoutVolume.weight,
+                    targetWeight,
+                    blackoutFadeSpeed *
+                    Time.deltaTime
+                );
+
+            yield return null;
+        }
+
+        blackoutVolume.weight =
+            targetWeight;
+
+        blackoutVolumeCoroutine = null;
     }
 
     // ==================================================

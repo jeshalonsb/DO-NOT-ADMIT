@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da41940cf295f8341afa3cc0264b6e7f, type: 3}
   m_Name: LaurenMitchell_Record
   m_EditorClassIdentifier: Assembly-CSharp::EmployeeRecord
-  employeeName: Sarah Collins
+  employeeName: Lauren Mitchell
   employeeID: 8894
   department: Administration
   clearanceLevel: C

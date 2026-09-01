@@ -14,31 +14,64 @@ public class IDCard : MonoBehaviour
     [Header("Portrait")]
     [SerializeField] private Image portraitImage;
 
+    [Header("Pickup")]
+    [SerializeField] private PickupID pickupID;
+
+    private void Awake()
+    {
+        if (pickupID == null)
+        {
+            pickupID =
+                GetComponent<PickupID>();
+        }
+    }
+
     public void DisplayVisitor(Visitor visitor)
     {
         if (visitor == null)
             return;
 
-        nameText.text =
-            visitor.DisplayName;
+        // Turn card on first.
+        gameObject.SetActive(true);
 
-        idText.text =
-            "ID #" + visitor.DisplayEmployeeID;
+        // Make sure it is back on the desk.
+        if (pickupID != null)
+        {
+            pickupID.ResetToDeskImmediate();
+        }
 
-        departmentText.text =
-            visitor.DisplayDepartment;
+        if (nameText != null)
+        {
+            nameText.text =
+                visitor.DisplayName;
+        }
 
-        clearanceText.text =
-            "CLEARANCE: " +
-            visitor.DisplayClearance;
+        if (idText != null)
+        {
+            idText.text =
+                "ID #" +
+                visitor.DisplayEmployeeID;
+        }
 
-        statusText.text =
-            "STATUS: " +
-            visitor.DisplayStatus;
+        if (departmentText != null)
+        {
+            departmentText.text =
+                visitor.DisplayDepartment;
+        }
 
-        // ------------------------------------------
-        // PORTRAIT
-        // ------------------------------------------
+        if (clearanceText != null)
+        {
+            clearanceText.text =
+                "CLEARANCE: " +
+                visitor.DisplayClearance;
+        }
+
+        if (statusText != null)
+        {
+            statusText.text =
+                "STATUS: " +
+                visitor.DisplayStatus;
+        }
 
         if (portraitImage != null &&
             visitor.Data != null)
@@ -50,8 +83,6 @@ public class IDCard : MonoBehaviour
                 visitor.Data.idPortrait != null;
         }
 
-        gameObject.SetActive(true);
-
         Debug.Log(
             "Displaying ID for: " +
             visitor.DisplayName
@@ -60,6 +91,17 @@ public class IDCard : MonoBehaviour
 
     public void HideCard()
     {
+        // Return card to desk first.
+        if (pickupID != null)
+        {
+            pickupID.ResetToDeskImmediate();
+        }
+
+        // Then completely hide it.
         gameObject.SetActive(false);
+
+        Debug.Log(
+            "ID card hidden."
+        );
     }
 }

@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da41940cf295f8341afa3cc0264b6e7f, type: 3}
   m_Name: NadiaPatel_Record
   m_EditorClassIdentifier: Assembly-CSharp::EmployeeRecord
-  employeeName: Sarah Collins
-  employeeID: 7319
-  department: 'Research '
-  clearanceLevel: A
+  employeeName: Nadia Patel
+  employeeID: 5273
+  department: Administration
+  clearanceLevel: B
   employeeStatus: ACTIVE
