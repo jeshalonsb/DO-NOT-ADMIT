@@ -12898,7 +12898,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &564405590
 RectTransform:
   m_ObjectHideFlags: 0
@@ -17645,7 +17645,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &803326194
 RectTransform:
   m_ObjectHideFlags: 0
@@ -17663,7 +17663,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: -118, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &803326195
@@ -24462,7 +24462,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Jeshalon Berrios - Technical Designer
+  m_text: Jeshalon Berrios - Technical/Level Designer
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8445e056e2d5b774195727ba95ca3189, type: 2}
   m_sharedMaterial: {fileID: 1164037465177834577, guid: 8445e056e2d5b774195727ba95ca3189, type: 2}
@@ -26850,7 +26850,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1248762575
 MonoBehaviour:
   m_ObjectHideFlags: 0

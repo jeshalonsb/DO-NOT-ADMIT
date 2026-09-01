@@ -21093,7 +21093,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShiftClock
   clockText: {fileID: 1738784821}
-  secondsPerHour: 10
+  secondsPerHour: 70
 --- !u!114 &761099007
 MonoBehaviour:
   m_ObjectHideFlags: 0
