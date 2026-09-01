@@ -11,6 +11,11 @@ public class VisitorDialogueUI : MonoBehaviour
     [Header("Typewriter")]
     [SerializeField] private float typingSpeed = 0.03f;
 
+    [Header("Typing Audio")]
+    [SerializeField] private AudioSource typingAudioSource;
+    [SerializeField] private AudioClip typingSound;
+    [SerializeField] private float typingVolume = 0.25f;
+
     [Header("Timing")]
     [SerializeField] private float displayTime = 2f;
 
@@ -18,7 +23,14 @@ public class VisitorDialogueUI : MonoBehaviour
 
     private void Start()
     {
-        dialoguePanel.SetActive(false);
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(false);
+
+        if (typingAudioSource != null)
+        {
+            typingAudioSource.playOnAwake = false;
+            typingAudioSource.loop = false;
+        }
     }
 
     public void ShowDialogue(string visitorName, string dialogue)
@@ -27,7 +39,12 @@ public class VisitorDialogueUI : MonoBehaviour
             return;
 
         if (dialogueRoutine != null)
+        {
             StopCoroutine(dialogueRoutine);
+            dialogueRoutine = null;
+        }
+
+        StopTypingSound();
 
         dialogueRoutine = StartCoroutine(
             ShowDialogueRoutine(visitorName, dialogue)
@@ -38,27 +55,62 @@ public class VisitorDialogueUI : MonoBehaviour
         string visitorName,
         string dialogue)
     {
-        dialoguePanel.SetActive(true);
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(true);
 
-        // Combine name and dialogue into one string.
         string fullDialogue =
             visitorName.ToUpper() + ": " + dialogue;
 
-        dialogueText.text = "";
+        if (dialogueText != null)
+            dialogueText.text = "";
 
-        // Typewriter effect.
         foreach (char letter in fullDialogue)
         {
-            dialogueText.text += letter;
+            if (dialogueText != null)
+                dialogueText.text += letter;
 
-            yield return new WaitForSeconds(typingSpeed);
+            if (!char.IsWhiteSpace(letter))
+            {
+                PlayTypingSound();
+            }
+
+            yield return new WaitForSeconds(
+                typingSpeed
+            );
         }
 
-        // Give player time to read after typing finishes.
-        yield return new WaitForSeconds(displayTime);
+        StopTypingSound();
 
-        dialoguePanel.SetActive(false);
+        yield return new WaitForSeconds(
+            displayTime
+        );
+
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(false);
+
         dialogueRoutine = null;
+    }
+
+    private void PlayTypingSound()
+    {
+        if (typingAudioSource == null)
+            return;
+
+        if (typingSound == null)
+            return;
+
+        typingAudioSource.PlayOneShot(
+            typingSound,
+            typingVolume
+        );
+    }
+
+    private void StopTypingSound()
+    {
+        if (typingAudioSource == null)
+            return;
+
+        typingAudioSource.Stop();
     }
 
     public void HideDialogue()
@@ -69,6 +121,9 @@ public class VisitorDialogueUI : MonoBehaviour
             dialogueRoutine = null;
         }
 
-        dialoguePanel.SetActive(false);
+        StopTypingSound();
+
+        if (dialoguePanel != null)
+            dialoguePanel.SetActive(false);
     }
 }

@@ -72,6 +72,16 @@ public class PowerManager : MonoBehaviour
     [SerializeField]
     private float blackoutFadeSpeed = 1.5f;
 
+    [Header("Power Audio")]
+    [SerializeField]
+    private AudioSource powerAudioSource;
+
+    [SerializeField]
+    private AudioClip powerFailureSound;
+
+    [SerializeField]
+    private AudioClip powerRestoreSound;
+
     private bool powerOn = true;
 
     private Coroutine blackoutVolumeCoroutine;
@@ -88,6 +98,12 @@ public class PowerManager : MonoBehaviour
         {
             blackoutVolume.weight = 0f;
         }
+
+        if (powerAudioSource != null)
+        {
+            powerAudioSource.playOnAwake = false;
+            powerAudioSource.loop = false;
+        }
     }
 
     // ==================================================
@@ -103,6 +119,11 @@ public class PowerManager : MonoBehaviour
 
         Debug.Log(
             "POWER FAILURE"
+        );
+
+        // Play blackout sound.
+        PlayPowerSound(
+            powerFailureSound
         );
 
         if (shiftClock != null)
@@ -213,6 +234,11 @@ public class PowerManager : MonoBehaviour
             "RESTORING POWER"
         );
 
+        // Play power restoration sound.
+        PlayPowerSound(
+            powerRestoreSound
+        );
+
         SetLights(
             restoringLights,
             true
@@ -291,6 +317,24 @@ public class PowerManager : MonoBehaviour
 
         Debug.Log(
             "POWER RESTORED - PARTIAL SYSTEM FAILURE"
+        );
+    }
+
+    // ==================================================
+    // POWER AUDIO
+    // ==================================================
+
+    private void PlayPowerSound(
+        AudioClip sound)
+    {
+        if (powerAudioSource == null)
+            return;
+
+        if (sound == null)
+            return;
+
+        powerAudioSource.PlayOneShot(
+            sound
         );
     }
 

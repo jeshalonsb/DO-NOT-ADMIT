@@ -39,6 +39,11 @@ public class EndingController : MonoBehaviour
     [SerializeField] private Transform supervisorLookTarget;
     [SerializeField] private GameObject[] supervisorScareTriggers;
 
+    [Header("Supervisor Audio")]
+    [SerializeField] private AudioSource supervisorAudioSource;
+    [SerializeField] private AudioClip supervisorScareSound;
+    [SerializeField] private float supervisorScareVolume = 1f;
+
     [Range(0f, 1f)]
     [SerializeField] private float supervisorScareChance = 0.8f;
 
@@ -380,15 +385,23 @@ public class EndingController : MonoBehaviour
         );
     }
 
-    private IEnumerator
-        SupervisorScareRoutine()
+    private IEnumerator SupervisorScareRoutine()
     {
         LockPlayerControls();
 
         SpawnSupervisorBehindPlayer();
 
-        yield return
-            new WaitForSeconds(0.1f);
+        yield return new WaitForSeconds(0.1f);
+
+        // Supervisor scare sound
+        if (supervisorAudioSource != null &&
+            supervisorScareSound != null)
+        {
+            supervisorAudioSource.PlayOneShot(
+                supervisorScareSound,
+                supervisorScareVolume
+            );
+        }
 
         if (supervisorLookTarget != null)
         {
@@ -477,10 +490,9 @@ public class EndingController : MonoBehaviour
             );
         }
 
-        yield return
-            new WaitForSeconds(
-                dialogueLineTime
-            );
+        yield return new WaitForSeconds(
+            dialogueLineTime
+        );
 
         if (dialogueUI != null)
         {
@@ -490,10 +502,9 @@ public class EndingController : MonoBehaviour
             );
         }
 
-        yield return
-            new WaitForSeconds(
-                dialogueLineTime
-            );
+        yield return new WaitForSeconds(
+            dialogueLineTime
+        );
 
         if (dialogueUI != null)
         {
@@ -503,10 +514,9 @@ public class EndingController : MonoBehaviour
             );
         }
 
-        yield return
-            new WaitForSeconds(
-                dialogueLineTime
-            );
+        yield return new WaitForSeconds(
+            dialogueLineTime
+        );
 
         if (!gameEnded)
             UnlockPlayerControls();

@@ -45,4 +45,8 @@ public class PlayerLook : MonoBehaviour
 
         playerBody.Rotate(Vector3.up * mouseX);
     }
+    public void SetSensitivity(float value)
+    {
+        mouseSensitivity = value;
+    }
 }

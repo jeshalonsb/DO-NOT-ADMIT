@@ -22,6 +22,10 @@ public class Visitor : MonoBehaviour
     [Header("Animation")]
     [SerializeField] private Animator animator;
 
+    [Header("Footsteps")]
+    [SerializeField] private AudioSource footstepSource;
+    [SerializeField] private float footstepVolume = 0.35f;
+
     private static readonly int IsWalkingHash =
         Animator.StringToHash("IsWalking");
 
@@ -105,6 +109,20 @@ public class Visitor : MonoBehaviour
     private Vector3 targetPosition;
 
     private VisitorState currentState;
+
+    // ==================================================
+    // AUDIO SETUP
+    // ==================================================
+
+    private void Awake()
+    {
+        if (footstepSource != null)
+        {
+            footstepSource.loop = true;
+            footstepSource.playOnAwake = false;
+            footstepSource.volume = footstepVolume;
+        }
+    }
 
     // ==================================================
     // CHARACTER MODEL
@@ -410,7 +428,7 @@ public class Visitor : MonoBehaviour
     }
 
     // ==================================================
-    // STATE / ANIMATION
+    // STATE / ANIMATION / AUDIO
     // ==================================================
 
     private void SetState(
@@ -419,6 +437,7 @@ public class Visitor : MonoBehaviour
         currentState = newState;
 
         UpdateAnimation();
+        UpdateFootsteps();
     }
 
     private void UpdateAnimation()
@@ -427,22 +446,56 @@ public class Visitor : MonoBehaviour
             return;
 
         bool shouldWalk =
-            currentState ==
-                VisitorState.MovingToInspection ||
-
-            currentState ==
-                VisitorState.MovingToDoor ||
-
-            currentState ==
-                VisitorState.LeavingDenied ||
-
-            currentState ==
-                VisitorState.EnteringFacility;
+            IsMoving();
 
         animator.SetBool(
             IsWalkingHash,
             shouldWalk
         );
+    }
+
+    private void UpdateFootsteps()
+    {
+        if (IsMoving())
+        {
+            StartFootsteps();
+        }
+        else
+        {
+            StopFootsteps();
+        }
+    }
+
+    private void StartFootsteps()
+    {
+        if (footstepSource == null)
+        {
+            Debug.LogWarning(
+                "Visitor has no Footstep AudioSource assigned."
+            );
+
+            return;
+        }
+
+        if (!footstepSource.isPlaying)
+        {
+            footstepSource.Play();
+
+            Debug.Log(
+                "Visitor footsteps started."
+            );
+        }
+    }
+
+    private void StopFootsteps()
+    {
+        if (footstepSource == null)
+            return;
+
+        if (footstepSource.isPlaying)
+        {
+            footstepSource.Stop();
+        }
     }
 
     // ==================================================
@@ -503,8 +556,8 @@ public class Visitor : MonoBehaviour
         {
             case VisitorState.MovingToInspection:
 
-                // Face the security booth/window
-                transform.rotation = inspectionPoint.rotation;
+                transform.rotation =
+                    inspectionPoint.rotation;
 
                 SetState(
                     VisitorState.WaitingForDecision
@@ -516,7 +569,8 @@ public class Visitor : MonoBehaviour
 
                 if (visitorManager != null)
                 {
-                    visitorManager.VisitorReady(this);
+                    visitorManager
+                        .VisitorReady(this);
                 }
 
                 break;
@@ -541,6 +595,8 @@ public class Visitor : MonoBehaviour
 
             case VisitorState.LeavingDenied:
 
+                StopFootsteps();
+
                 Debug.Log(
                     "Visitor has left."
                 );
@@ -556,6 +612,8 @@ public class Visitor : MonoBehaviour
                 break;
 
             case VisitorState.EnteringFacility:
+
+                StopFootsteps();
 
                 Debug.Log(
                     "Visitor entered facility."
@@ -652,7 +710,10 @@ public class Visitor : MonoBehaviour
                 "Visitor has no deny exit point."
             );
 
+            StopFootsteps();
+
             Destroy(gameObject);
+
             return;
         }
 
@@ -667,5 +728,14 @@ public class Visitor : MonoBehaviour
             visitorData.visitorName +
             " is leaving because the shift ended."
         );
+    }
+
+    // ==================================================
+    // CLEANUP
+    // ==================================================
+
+    private void OnDestroy()
+    {
+        StopFootsteps();
     }
 }

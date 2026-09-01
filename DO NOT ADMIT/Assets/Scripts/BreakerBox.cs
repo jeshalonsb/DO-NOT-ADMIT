@@ -14,19 +14,30 @@ public class BreakerBox : Interactable
     [SerializeField] private GameObject progressUI;
     [SerializeField] private Image progressFill;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip repairLoopSound;
+    [SerializeField] private AudioClip resetSound;
+
     private float holdTimer;
     private bool playerLookingAtBreaker;
     private bool breakerReset;
 
     private void Start()
     {
-        HidePrompt(); 
+        HidePrompt();
 
         if (progressUI != null)
             progressUI.SetActive(false);
 
         if (progressFill != null)
             progressFill.fillAmount = 0f;
+
+        if (audioSource != null)
+        {
+            audioSource.playOnAwake = false;
+            audioSource.loop = false;
+        }
     }
 
     public override void ShowPrompt()
@@ -69,10 +80,15 @@ public class BreakerBox : Interactable
         if (powerManager == null || powerManager.PowerOn)
             return;
 
+        if (Keyboard.current == null)
+            return;
+
         if (Keyboard.current.eKey.isPressed)
         {
             if (progressUI != null)
                 progressUI.SetActive(true);
+
+            StartRepairSound();
 
             holdTimer += Time.deltaTime;
 
@@ -93,9 +109,39 @@ public class BreakerBox : Interactable
         }
     }
 
+    private void StartRepairSound()
+    {
+        if (audioSource == null)
+            return;
+
+        if (repairLoopSound == null)
+            return;
+
+        if (audioSource.isPlaying)
+            return;
+
+        audioSource.clip = repairLoopSound;
+        audioSource.loop = true;
+        audioSource.Play();
+    }
+
+    private void StopRepairSound()
+    {
+        if (audioSource == null)
+            return;
+
+        if (audioSource.isPlaying)
+            audioSource.Stop();
+
+        audioSource.loop = false;
+        audioSource.clip = null;
+    }
+
     private void CancelHold()
     {
         holdTimer = 0f;
+
+        StopRepairSound();
 
         if (progressFill != null)
             progressFill.fillAmount = 0f;
@@ -113,9 +159,18 @@ public class BreakerBox : Interactable
         if (progressFill != null)
             progressFill.fillAmount = 1f;
 
+        StopRepairSound();
+
+        if (audioSource != null &&
+            resetSound != null)
+        {
+            audioSource.PlayOneShot(resetSound);
+        }
+
         Debug.Log("BREAKER RESET");
 
-        powerManager.RestorePower();
+        if (powerManager != null)
+            powerManager.RestorePower();
 
         if (progressUI != null)
             progressUI.SetActive(false);

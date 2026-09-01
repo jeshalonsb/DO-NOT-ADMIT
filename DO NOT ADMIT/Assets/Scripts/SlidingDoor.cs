@@ -16,6 +16,11 @@ public class SlidingDoor : Interactable
     [Header("Automatic Closing")]
     [SerializeField] private float autoCloseDelay = 0.5f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource doorAudioSource;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip closeSound;
+
     private Vector3 closedPosition;
     private Vector3 openPosition;
 
@@ -42,8 +47,6 @@ public class SlidingDoor : Interactable
 
     private void Update()
     {
-        // If the door becomes locked while the player
-        // is already looking at it, hide the prompt.
         if (doorLocked)
         {
             HidePrompt();
@@ -89,13 +92,26 @@ public class SlidingDoor : Interactable
 
         StopAllCoroutines();
 
-        StartCoroutine(
-            SlideDoor(
-                doorOpen
-                    ? openPosition
-                    : closedPosition
-            )
-        );
+        if (doorOpen)
+        {
+            PlayDoorSound(openSound);
+
+            StartCoroutine(
+                SlideDoor(
+                    openPosition
+                )
+            );
+        }
+        else
+        {
+            PlayDoorSound(closeSound);
+
+            StartCoroutine(
+                SlideDoor(
+                    closedPosition
+                )
+            );
+        }
     }
 
     // ==================================================
@@ -112,13 +128,13 @@ public class SlidingDoor : Interactable
             "BOOTH DOOR HAS BEEN LOCKED"
         );
 
-        // If the door is open when the shift starts,
-        // close it automatically.
         if (doorOpen)
         {
             doorOpen = false;
 
             StopAllCoroutines();
+
+            PlayDoorSound(closeSound);
 
             StartCoroutine(
                 SlideDoor(
@@ -155,13 +171,13 @@ public class SlidingDoor : Interactable
             "BOOTH DOOR UNLOCKED FOR SHIFT END"
         );
 
-        // Automatically open the door at the end
-        // of the shift so the player can leave.
         if (!doorOpen)
         {
             doorOpen = true;
 
             StopAllCoroutines();
+
+            PlayDoorSound(openSound);
 
             StartCoroutine(
                 SlideDoor(
@@ -194,6 +210,8 @@ public class SlidingDoor : Interactable
         );
 
         doorOpen = false;
+
+        PlayDoorSound(closeSound);
 
         yield return StartCoroutine(
             SlideDoor(
@@ -238,5 +256,21 @@ public class SlidingDoor : Interactable
             targetPosition;
 
         moving = false;
+    }
+
+    // ==================================================
+    // AUDIO
+    // ==================================================
+
+    private void PlayDoorSound(
+        AudioClip sound)
+    {
+        if (doorAudioSource == null)
+            return;
+
+        if (sound == null)
+            return;
+
+        doorAudioSource.PlayOneShot(sound);
     }
 }

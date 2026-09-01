@@ -9,6 +9,11 @@ public class ComputerInteractable : Interactable
     [SerializeField] private PlayerLook playerLook;
     [SerializeField] private PlayerMovement playerMovement;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource computerAudioSource;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip closeSound;
+
     private bool computerOpen;
     private bool powered = true;
 
@@ -33,7 +38,10 @@ public class ComputerInteractable : Interactable
 
         computerOpen = true;
 
-        computerCanvas.SetActive(true);
+        PlaySound(openSound);
+
+        if (computerCanvas != null)
+            computerCanvas.SetActive(true);
 
         if (playerLook != null)
             playerLook.enabled = false;
@@ -47,9 +55,15 @@ public class ComputerInteractable : Interactable
 
     public void CloseComputer()
     {
+        if (!computerOpen)
+            return;
+
         computerOpen = false;
 
-        computerCanvas.SetActive(false);
+        PlaySound(closeSound);
+
+        if (computerCanvas != null)
+            computerCanvas.SetActive(false);
 
         if (playerLook != null)
             playerLook.enabled = true;
@@ -74,8 +88,19 @@ public class ComputerInteractable : Interactable
 
         Debug.Log(
             powered
-            ? "Computer powered on."
-            : "Computer powered off."
+                ? "Computer powered on."
+                : "Computer powered off."
         );
+    }
+
+    private void PlaySound(AudioClip sound)
+    {
+        if (computerAudioSource == null)
+            return;
+
+        if (sound == null)
+            return;
+
+        computerAudioSource.PlayOneShot(sound);
     }
 }

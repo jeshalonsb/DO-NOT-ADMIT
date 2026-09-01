@@ -6,6 +6,7 @@ public class Phone : Interactable
     [Header("Phone Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip ringSound;
+    [SerializeField] private AudioClip pickupSound;
 
     [Header("Dialogue")]
     [SerializeField] private VisitorDialogueUI dialogueUI;
@@ -75,10 +76,21 @@ public class Phone : Interactable
 
         HidePrompt();
 
+        // Stop ringing
         if (audioSource != null)
         {
             audioSource.Stop();
             audioSource.loop = false;
+            audioSource.clip = null;
+        }
+
+        // Play pickup sound
+        if (audioSource != null &&
+            pickupSound != null)
+        {
+            audioSource.PlayOneShot(
+                pickupSound
+            );
         }
 
         Debug.Log("PHONE ANSWERED");
@@ -161,6 +173,7 @@ public class Phone : Interactable
             {
                 audioSource.Stop();
                 audioSource.loop = false;
+                audioSource.clip = null;
             }
 
             phoneRinging = false;

@@ -266,9 +266,9 @@ public class GameFlowManager : MonoBehaviour
         blackoutActive = true;
 
         if (boothDoor != null)
-        {
-            boothDoor.UnlockDoor();
-        }
+{
+    boothDoor.UnlockDoor();
+}
 
         SetObjective(
             "POWER FAILURE - RESET BREAKER\nHINT: SECURITY PARKING"
