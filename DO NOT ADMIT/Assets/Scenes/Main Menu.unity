@@ -12255,8 +12255,8 @@ MonoBehaviour:
     Implement character animations and location based audio (all assets for this
     may be found rather than created)
 
-    Show animations with audio for Idle,
-    Walk, Run, Jump, Fall (to the ground), Wave Hello, and Interact
+    Show animations with audio for Idle, Walk,
+    Run, Jump, Fall (to the ground), Wave Hello, and Interact
 
 
 
