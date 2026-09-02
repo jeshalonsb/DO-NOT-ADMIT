@@ -20793,8 +20793,8 @@ MonoBehaviour:
   shiftManager: {fileID: 761099005}
   facilityDoors: {fileID: 1068535128}
   powerManager: {fileID: 761099008}
-  minimumImpostors: 1
-  maximumImpostors: 4
+  minimumImpostors: 3
+  maximumImpostors: 6
 --- !u!114 &761099004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20849,7 +20849,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShiftClock
   clockText: {fileID: 1738784821}
-  secondsPerHour: 15
+  secondsPerHour: 60
 --- !u!114 &761099007
 MonoBehaviour:
   m_ObjectHideFlags: 0

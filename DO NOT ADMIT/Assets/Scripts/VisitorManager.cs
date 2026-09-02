@@ -120,91 +120,59 @@ public class VisitorManager : MonoBehaviour
         if (shiftClosed)
             return true;
 
+        // 6 AM has arrived.
+        // No NEW visitors may spawn after this point.
         shiftEnding = true;
         waitingToSpawnVisitor = false;
 
         Debug.Log(
-            "6 AM - CHECKING FINAL VISITOR STATE"
+            "6 AM - No more visitors will spawn. " +
+            "Waiting for active visitor to finish."
         );
 
-        if (idCard != null)
-            idCard.HideCard();
+        // ==================================================
+        // SOMEONE IS STILL ACTIVE
+        // ==================================================
 
-        // --------------------------------------------------
-        // CLEARED VISITOR
-        //
-        // If they were already cleared before 6 AM,
-        // they must finish entering.
-        // --------------------------------------------------
-
-        if (currentVisitor != null &&
-            currentVisitor.IsPendingFacilityEntry)
+        // This covers:
+        // - walking from their car
+        // - waiting at inspection
+        // - already cleared
+        // - already denied
+        // - walking toward the facility
+        if (currentVisitor != null)
         {
             waitingForFinalClearedVisitor = true;
 
             Debug.Log(
-                "Shift waiting for final cleared visitor to enter."
+                "6 AM - Active visitor must be fully processed before shift ends."
             );
 
             return false;
         }
 
+        // Visitor has been cleared and is waiting
+        // for the player to unlock the facility door.
         if (visitorWaitingAtDoor != null)
         {
             waitingForFinalClearedVisitor = true;
 
             Debug.Log(
-                "Shift waiting for visitor at facility door."
+                "6 AM - Visitor at facility entrance must finish admission."
             );
 
             return false;
         }
 
-        // --------------------------------------------------
-        // ALREADY DENIED
-        //
-        // Keep their denial dialogue.
-        // Don't replace it with the 6 AM dialogue.
-        // --------------------------------------------------
+        // ==================================================
+        // NOBODY LEFT
+        // ==================================================
 
-        if (currentVisitor != null &&
-            currentVisitor.IsLeavingDenied)
-        {
-            Debug.Log(
-                "Visitor was already denied. Keeping original dialogue."
-            );
-
-            FinalizeShiftClosure();
-            return true;
-        }
-
-        // --------------------------------------------------
-        // UNDECIDED VISITOR
-        //
-        // Only undecided visitors get the
-        // "shift's over" dialogue.
-        // --------------------------------------------------
-
-        if (currentVisitor != null &&
-            currentVisitor.IsUndecided)
-        {
-            if (dialogueUI != null &&
-                currentVisitor.Data != null)
-            {
-                dialogueUI.ShowDialogue(
-                    currentVisitor.Data.visitorName,
-                    "Looks like your shift's over. I'll come back later."
-                );
-            }
-
-            currentVisitor.LeaveForShiftEnd();
-
-            FinalizeShiftClosure();
-            return true;
-        }
-
-        // Nobody is currently being processed.
         FinalizeShiftClosure();
+
+        Debug.Log(
+            "6 AM - No active visitors. Shift can end immediately."
+        );
 
         return true;
     }
@@ -789,7 +757,7 @@ public class VisitorManager : MonoBehaviour
     // ==================================================
 
     public void VisitorFinished(
-        Visitor visitor)
+    Visitor visitor)
     {
         if (idCard != null)
             idCard.HideCard();
@@ -802,17 +770,14 @@ public class VisitorManager : MonoBehaviour
 
         decisionMade = false;
 
-        // ----------------------------------------------
-        // SPECIAL 6 AM CASE
-        //
-        // The last cleared visitor has now entered,
-        // so the shift is finally allowed to finish.
-        // ----------------------------------------------
+        // ==================================================
+        // 6 AM FINAL VISITOR
+        // ==================================================
 
-        if (waitingForFinalClearedVisitor)
+        if (shiftEnding && !shiftClosed)
         {
             Debug.Log(
-                "Final cleared visitor finished entering. Shift can now end."
+                "Final visitor finished. Shift can now end."
             );
 
             FinalizeShiftClosure();
@@ -825,14 +790,9 @@ public class VisitorManager : MonoBehaviour
         if (shiftClosed)
             return;
 
-        if (shiftEnding)
-        {
-            Debug.Log(
-                "Visitor finished. Shift is ending, so no replacement visitor."
-            );
-
-            return;
-        }
+        // ==================================================
+        // NORMAL SHIFT
+        // ==================================================
 
         StartCoroutine(
             SpawnNextVisitor()
